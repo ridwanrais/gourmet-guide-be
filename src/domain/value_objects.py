@@ -1,7 +1,54 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import Optional, List, Dict, Any
 
 
+class ErrorDetail(BaseModel):
+    message: str = Field(..., example="The requested resource was not found.")
+    details: Optional[str] = Field(None, example="User not found.")
+    code: Optional[str] = Field(None, example="NF_01")
+
+
+class ErrorResponse(BaseModel):
+    error: ErrorDetail
+
+
+# Location Value Objects
+class AddressRequest(BaseModel):
+    address: str = Field(..., example="Jakarta, Indonesia")
+
+
+class CoordinatesRequest(BaseModel):
+    latitude: float = Field(..., example=-6.2088)
+    longitude: float = Field(..., example=106.8456)
+
+
+class CoordinatesResponse(BaseModel):
+    latitude: float = Field(..., example=-6.2088)
+    longitude: float = Field(..., example=106.8456)
+    formattedAddress: str = Field(..., example="Jakarta, Indonesia")
+
+
+class AddressResponse(BaseModel):
+    address: str = Field(..., example="Jakarta, Indonesia")
+    city: str = Field(..., example="Jakarta")
+    country: str = Field(..., example="Indonesia")
+
+
+# Preferences Value Objects
+class SuggestionsResponse(BaseModel):
+    suggestions: List[str] = Field(
+        ...,
+        example=[
+            "I feel like eating something spicy and cheap",
+            "Recommend a healthy lunch option",
+            "What's a good vegetarian restaurant nearby?",
+            "I want something quick and filling",
+            "Show me the best-rated restaurants"
+        ]
+    )
+
+
+# Restaurant Value Objects
 class Coordinates(BaseModel):
     latitude: float = Field(..., example=-6.2088)
     longitude: float = Field(..., example=106.8456)

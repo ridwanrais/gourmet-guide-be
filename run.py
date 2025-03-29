@@ -1,6 +1,7 @@
 import asyncio
 import uvicorn
-from app.db.init_db import init_db
+import os
+from src.infrastructure.init_db import init_db
 
 async def setup():
     """Initialize the database before starting the application."""
@@ -13,5 +14,6 @@ if __name__ == "__main__":
     asyncio.run(setup())
     
     # Start the FastAPI application
+    port = int(os.getenv("PORT", 8080))  # Default to 8080 if PORT not set
     print("Starting Gourmet Guide API server...")
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("src.main:app", host="0.0.0.0", port=port, reload=True)

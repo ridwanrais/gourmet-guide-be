@@ -2,9 +2,9 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.db.database import get_db
-from app.api.routes import location, preferences, restaurants
+from src.config import settings
+from src.infrastructure.database import get_db
+from src.presentation.routes import location, preferences, restaurants
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -50,4 +50,4 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)

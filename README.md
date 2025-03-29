@@ -1,9 +1,10 @@
 # Gourmet Guide API
 
-A FastAPI backend that integrates with LangGraph for conversational AI workflows, uses Pydantic for data validation, and stores time-series data in TimescaleDB.
+A FastAPI backend that integrates with LangGraph for conversational AI workflows, uses Pydantic for data validation, and stores time-series data in TimescaleDB. Built following clean architecture principles for better maintainability and testability.
 
 ## Features
 
+- **Clean Architecture**: Organized into domain, application, adapters, infrastructure, and presentation layers for clear separation of concerns.
 - **FastAPI Setup**: Asynchronous endpoints for handling AI interactions and time-series data with dependency injection for database connections.
 - **LangGraph Integration**: Processes user queries through a multi-step conversation flow and stores results in the database.
 - **Pydantic Models**: Strictly validates request/response data based on the API contract.
@@ -14,34 +15,36 @@ A FastAPI backend that integrates with LangGraph for conversational AI workflows
 
 ```
 gourmet-guide-api/
-├── app/
-│   ├── api/
+├── src/
+│   ├── domain/
+│   │   ├── models.py           # Database models and entities
+│   │   └── value_objects.py    # Pydantic models for request/response validation
+│   ├── application/
+│   │   ├── services.py         # Business logic for preferences and location
+│   │   ├── workflows.py        # Base LLM configuration
+│   │   └── restaurant_workflow.py  # Restaurant recommendation workflow
+│   ├── adapters/
+│   │   └── repositories.py     # Repository pattern for database operations
+│   ├── infrastructure/
+│   │   ├── database.py         # Database connection and session management
+│   │   └── init_db.py          # Database initialization
+│   ├── presentation/
 │   │   └── routes/
-│   │       ├── location.py
-│   │       ├── preferences.py
-│   │       └── restaurants.py
-│   ├── core/
-│   │   └── config.py
-│   ├── db/
-│   │   ├── database.py
-│   │   └── init_db.py
-│   ├── models/
-│   │   └── timeseries.py
-│   ├── schemas/
-│   │   ├── common.py
-│   │   ├── location.py
-│   │   ├── preferences.py
-│   │   └── restaurants.py
-│   ├── services/
-│   ├── workflows/
-│   │   ├── base.py
-│   │   └── restaurant_recommendation.py
-│   └── main.py
-├── .env
-├── docker-compose.yml
-├── requirements.txt
-└── run.py
+│   │       ├── location.py     # Location endpoints
+│   │       ├── preferences.py  # Preferences endpoints
+│   │       └── restaurants.py  # Restaurant recommendations endpoints
+│   └── main.py                 # FastAPI application setup
+├── .env                        # Environment variables
+├── docker-compose.yml          # Docker setup for TimescaleDB
+├── requirements.txt            # Python dependencies
+└── run.py                      # Application entry point
 ```
+
+## Requirements
+
+- Python 3.11 (LTS version recommended for best compatibility with dependencies)
+- Docker and Docker Compose (for TimescaleDB)
+- OpenRouter API key
 
 ## Setup
 
@@ -82,7 +85,12 @@ gourmet-guide-api/
 4. **Create and activate a Python virtual environment**
 
    ```bash
-   python3 -m venv venv
+   # Install Python 3.11 if not already installed
+   # On macOS with Homebrew:
+   # brew install python@3.11
+   
+   # Create virtual environment with Python 3.11
+   python3.11 -m venv venv
    source venv/bin/activate
    ```
 
@@ -132,6 +140,18 @@ Once the API is running, you can access the interactive documentation:
 
 - Swagger UI: `http://localhost:8000/v1/docs`
 - ReDoc: `http://localhost:8000/v1/redoc`
+
+## Clean Architecture
+
+This project follows clean architecture principles with the following layers:
+
+1. **Domain Layer**: Contains business entities and value objects with no dependencies on other layers.
+2. **Application Layer**: Contains business logic and use cases, depends only on the domain layer.
+3. **Adapters Layer**: Implements interfaces between the application and infrastructure layers.
+4. **Infrastructure Layer**: Contains database configuration and external services.
+5. **Presentation Layer**: Contains API routes and controllers with no business logic.
+
+This architecture provides better separation of concerns, testability, and maintainability.
 
 ## Troubleshooting
 

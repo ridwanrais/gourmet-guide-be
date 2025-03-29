@@ -1,8 +1,14 @@
 import asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.database import engine, Base, async_session_factory
-from app.models.timeseries import ConversationHistory, AIUsageStatistics, RestaurantRecommendation
+from src.infrastructure.database import engine, Base, async_session_factory
+from src.domain.models import ConversationHistory, AIUsageStatistics, RestaurantRecommendation
+
+
+async def drop_tables():
+    """Drop existing tables if they exist."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 async def create_tables():
@@ -39,7 +45,7 @@ async def setup_timescaledb():
             )
         )
         
-        # Create indexes for better query performance
+        # Create additional indexes for better query performance
         await session.execute(
             text(
                 "CREATE INDEX IF NOT EXISTS idx_conversation_history_session_id_timestamp "
@@ -66,8 +72,10 @@ async def setup_timescaledb():
 
 async def init_db():
     """Initialize database with tables and TimescaleDB setup."""
-    await create_tables()
-    await setup_timescaledb()
+    print("Initializing database...")
+    await drop_tables()  # First drop existing tables
+    await create_tables()  # Then create tables with the new schema
+    await setup_timescaledb()  # Finally set up TimescaleDB
 
 
 if __name__ == "__main__":

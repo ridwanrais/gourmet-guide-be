@@ -1,7 +1,7 @@
 from typing import Dict, Any, TypedDict, List, Optional
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_openai import ChatOpenAI
-from app.core.config import settings
+from src.config import settings
 
 
 class ConversationState(TypedDict):
