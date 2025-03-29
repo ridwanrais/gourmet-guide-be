@@ -1,5 +1,5 @@
-
-from typing import List
+import os
+from typing import List, Tuple
 from src.application.workflows import get_llm
 from src.domain.value_objects import CoordinatesResponse, AddressResponse
 from geopy.geocoders import Nominatim
@@ -13,26 +13,26 @@ geocoder = Nominatim(user_agent="gourmet_guide_api")
 async def generate_food_preference_suggestions(count: int = 5) -> List[str]:
     """
     Generate a list of food preference suggestions.
-
+    
     This function uses a language model to generate contextual food preference suggestions.
     """
     # Get LLM with Deepseek R1 model from OpenRouter
     llm = get_llm()
-
+    
     # Create a prompt for food preference suggestions
     prompt = f"""Generate {count} diverse and interesting food preferences or cuisines that someone might be interested in.
     Each suggestion should be a single line with no numbering or bullet points.
     Be creative and include a mix of specific dishes, cuisine types, and dietary preferences."""
-
+    
     # Get the response from the LLM
     response = llm.invoke(prompt)
-
+    
     # Process the response to extract suggestions
     suggestions = [line.strip() for line in response.content.split('\n') if line.strip()]
-
+    
     # Limit to the requested count
     suggestions = suggestions[:count]
-
+    
     return suggestions
 
 
