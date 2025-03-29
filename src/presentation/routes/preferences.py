@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException, status, Query
 from typing import List
-from src.domain.value_objects import SuggestionsResponse
+from src.domain.value_objects import SuggestionsResponse, ErrorResponse, ErrorDetail
 from src.application.services import generate_food_preference_suggestions
+from src.utils.error_handlers import ErrorHandlers
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
 
-@router.get("/suggestions", response_model=SuggestionsResponse)
+@router.get("/suggestions", response_model=SuggestionsResponse, responses={500: {"model": ErrorResponse}})
 async def get_food_preference_suggestions(count: int = Query(5, description="Number of suggestions to return")):
     """
     Get a list of suggested food preferences for the user.
@@ -20,10 +21,4 @@ async def get_food_preference_suggestions(count: int = Query(5, description="Num
         return SuggestionsResponse(suggestions=suggestions)
         
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "message": "An error occurred while generating suggestions",
-                "details": str(e)
-            }
-        )
+        ErrorHandlers.handle_server_error(e)

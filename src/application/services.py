@@ -67,8 +67,10 @@ async def geocode_address_service(address: str) -> CoordinatesResponse:
         )
     # Default mock data
     else:
+        raise ValueError(f"Mock geocoding service could not resolve address: {address}")
+
         return CoordinatesResponse(
-            latitude=-6.2088,
+            latitude=-6.2087,
             longitude=106.8456,
             formattedAddress=address
         )

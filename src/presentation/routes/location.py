@@ -4,6 +4,7 @@ from src.domain.value_objects import (
     AddressResponse, ErrorResponse, ErrorDetail
 )
 from src.application.services import geocode_address_service, reverse_geocode_service
+from src.utils.error_handlers import ErrorHandlers
 
 router = APIRouter(prefix="/location", tags=["location"])
 
@@ -21,23 +22,9 @@ async def geocode_address(request: AddressRequest):
         return await geocode_address_service(request.address)
             
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=ErrorDetail(
-                message="Invalid address supplied",
-                details=str(e),
-                code="INVALID_ADDRESS"
-            ).dict()
-        )
+        ErrorHandlers.handle_invalid_address(e)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=ErrorDetail(
-                message="An error occurred while processing the request",
-                details=str(e),
-                code="SERVER_ERROR"
-            ).dict()
-        )
+        ErrorHandlers.handle_server_error(e)
 
 
 @router.post("/reverse-geocode", response_model=AddressResponse, responses={400: {"model": ErrorResponse}})
@@ -53,11 +40,4 @@ async def reverse_geocode_coordinates(request: CoordinatesRequest):
         return await reverse_geocode_service(request.latitude, request.longitude)
             
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=ErrorDetail(
-                message="Invalid coordinates supplied",
-                details=str(e),
-                code="INVALID_COORDINATES"
-            ).dict()
-        )
+        ErrorHandlers.handle_invalid_coordinates(e)

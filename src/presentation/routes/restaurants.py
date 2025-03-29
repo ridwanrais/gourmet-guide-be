@@ -7,6 +7,7 @@ from src.domain.value_objects import (
 from src.infrastructure.database import get_db
 from src.application.restaurant_workflow import get_restaurant_recommendations_service
 from src.adapters.repositories import RestaurantRepository
+from src.utils.error_handlers import ErrorHandlers
 
 router = APIRouter(prefix="/restaurants", tags=["restaurants"])
 
@@ -47,11 +48,4 @@ async def get_restaurant_recommendations(
         return response
         
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=ErrorDetail(
-                message="Invalid request parameters",
-                details=str(e),
-                code="INVALID_REQUEST"
-            ).dict()
-        )
+        ErrorHandlers.handle_invalid_request(e)
