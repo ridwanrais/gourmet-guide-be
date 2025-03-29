@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # OpenRouter settings
     OPENROUTER_API_KEY: Optional[str] = os.getenv("OPENROUTER_API_KEY")
     OPENROUTER_BASE_URL: str = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat-r1")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-r1-zero:free")
     
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your_secret_key_for_jwt")

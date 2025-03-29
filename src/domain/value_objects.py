@@ -58,9 +58,8 @@ class Coordinates(BaseModel):
 
 
 class RecommendationRequest(BaseModel):
-    location: str = Field(..., example="Jakarta, Indonesia")
-    preference: str = Field(..., example="I want something spicy and vegetarian")
-    coordinates: Optional[Coordinates] = Field(None)
+    coordinates: Coordinates = Field(..., description="User's current location coordinates")
+    prompt: str = Field(..., example="Find me a place to eat! I'm looking for Italian food. Preferably something mid-range, and I'd love outdoor seating with vegetarian options.")
     radius: Optional[float] = Field(None, example=5.0, description="Search radius in kilometers")
     limit: Optional[int] = Field(None, example=5, description="Maximum number of recommendations to return")
     userId: Optional[str] = Field(None, example="user123", description="Optional user ID for personalized recommendations")

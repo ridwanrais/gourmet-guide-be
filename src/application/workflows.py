@@ -1,6 +1,6 @@
 from typing import Dict, Any, TypedDict, List, Optional
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_openai import ChatOpenAI
+from openai import OpenAI
 from src.config import settings
 
 
@@ -10,48 +10,47 @@ class ConversationState(TypedDict):
     context: Dict[str, Any]
 
 
+def get_openai_client():
+    """Get the OpenAI client configured for OpenRouter."""
+    return OpenAI(
+        base_url=settings.OPENROUTER_BASE_URL,
+        api_key=settings.OPENROUTER_API_KEY,
+    )
+
+
 def get_llm(model_name: str = None):
     """Get the language model using OpenRouter with Deepseek R1."""
-    model = model_name or settings.OPENROUTER_MODEL
-    
-    return ChatOpenAI(
-        model=model,
-        temperature=0.7,
-        openai_api_key=settings.OPENROUTER_API_KEY,
-        openai_api_base=settings.OPENROUTER_BASE_URL,
-        headers={
-            "HTTP-Referer": "https://gourmetguide.ai",  # Optional, for tracking
-            "X-Title": "Gourmet Guide AI"  # Optional, for tracking
-        }
-    )
+    # This is kept for backward compatibility but will use the direct OpenAI SDK approach
+    # in the actual implementation
+    return get_openai_client()
 
 
 def create_system_message(content: str) -> Dict[str, Any]:
     """Create a system message."""
-    return SystemMessage(content=content).dict()
+    return {"role": "system", "content": content}
 
 
 def create_human_message(content: str) -> Dict[str, Any]:
     """Create a human message."""
-    return HumanMessage(content=content).dict()
+    return {"role": "user", "content": content}
 
 
 def create_ai_message(content: str) -> Dict[str, Any]:
     """Create an AI message."""
-    return AIMessage(content=content).dict()
+    return {"role": "assistant", "content": content}
 
 
-def get_last_human_message(state: ConversationState) -> Optional[str]:
+def get_last_human_message(state: ConversationState) -> Optional[Dict[str, Any]]:
     """Get the last human message from the state."""
     for message in reversed(state["messages"]):
-        if message.get("type") == "human":
-            return message.get("content")
+        if message.get("role") == "user":
+            return message
     return None
 
 
-def get_last_ai_message(state: ConversationState) -> Optional[str]:
+def get_last_ai_message(state: ConversationState) -> Optional[Dict[str, Any]]:
     """Get the last AI message from the state."""
     for message in reversed(state["messages"]):
-        if message.get("type") == "ai":
-            return message.get("content")
+        if message.get("role") == "assistant":
+            return message
     return None

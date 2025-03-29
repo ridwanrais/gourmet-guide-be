@@ -18,7 +18,7 @@ async def get_restaurant_recommendations(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get personalized restaurant recommendations based on location and preferences.
+    Get personalized restaurant recommendations based on coordinates and prompt.
     
     This endpoint uses LangGraph to process the user's query and generate restaurant recommendations.
     The results are stored in TimescaleDB for future reference and analytics.
@@ -26,10 +26,9 @@ async def get_restaurant_recommendations(
     try:
         # Call the application service to get restaurant recommendations
         response, session_id = await get_restaurant_recommendations_service(
-            location=request.location,
-            preference=request.preference,
-            user_id=request.userId,
+            prompt=request.prompt,
             coordinates=request.coordinates,
+            user_id=request.userId,
             radius=request.radius,
             limit=request.limit
         )
@@ -39,8 +38,8 @@ async def get_restaurant_recommendations(
         await restaurant_repo.save_recommendation(
             session_id=session_id,
             user_id=request.userId,
-            location=request.location,
-            preference=request.preference,
+            location=f"{request.coordinates.latitude}, {request.coordinates.longitude}",
+            preference=request.prompt,
             recommendations=response.restaurants,
             match_score=response.matchScore
         )
