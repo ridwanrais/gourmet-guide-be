@@ -29,9 +29,12 @@ class CoordinatesResponse(BaseModel):
 
 
 class AddressResponse(BaseModel):
-    address: str = Field(..., example="Jakarta, Indonesia")
-    city: str = Field(..., example="Jakarta")
-    country: str = Field(..., example="Indonesia")
+    street: Optional[str] = Field(None, example="Jalan Sudirman 123")
+    city: Optional[str] = Field(None, example="Jakarta")
+    state: Optional[str] = Field(None, example="DKI Jakarta")
+    country: Optional[str] = Field(None, example="Indonesia")
+    postalCode: Optional[str] = Field(None, example="10110")
+    formattedAddress: str = Field(..., example="Jalan Sudirman 123, Jakarta, DKI Jakarta, 10110, Indonesia")
 
 
 # Preferences Value Objects
