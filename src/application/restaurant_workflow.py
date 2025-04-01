@@ -47,8 +47,8 @@ def run_restaurant_recommendation_workflow(
     logger.debug("Initializing OpenAI client for LLM processing")
     llm = get_openai_client()
 
-    # Get the response from the LLM
-    logger.debug(f"Sending request to LLM with model={settings.OPENROUTER_MODEL}")
+    # Get the response from the LLM - single call for both filtering and analysis
+    logger.debug(f"Sending request to LLM with model={settings.OPENROUTER_MODEL} for filtering and analysis")
     response = llm.chat.completions.create(
         model=settings.OPENROUTER_MODEL,
         temperature=0.7,
@@ -57,16 +57,46 @@ def run_restaurant_recommendation_workflow(
             "X-Title": "Gourmet Guide AI"
         },
         messages=[
-            {"role": "system", "content": "You are a helpful food recommendation assistant. Generate restaurant recommendations based on the user's location and preferences."},
-            {"role": "user", "content": f"""I'm at coordinates {coordinates.latitude}, {coordinates.longitude} and {prompt}.
-            Can you recommend some restaurants from this list? Limit to {limit} restaurants.
+            {"role": "system", "content": "You are a restaurant analysis assistant. Filter and analyze restaurants based on user preferences."},
+            {"role": "user", "content": f"""
+            Based on the user's request: "{prompt}", analyze these restaurants and select the top {limit} matches.
+            For each selected restaurant, provide:
+            1. A brief explanation of why it matches the user's preferences
+            2. What popular items they might enjoy there
+
+            Respond in JSON format like this:
+            {{
+                "selected_restaurants": [
+                    {{
+                        "id": "restaurant_id",
+                        "explanation": "Why this restaurant matches the user's preferences",
+                        "popular_items": [
+                            {{
+                                "name": "Item name",
+                                "description": "Brief description",
+                                "price": estimated_price_in_rupiah
+                            }}
+                        ]
+                    }}
+                ],
+                "match_score": 0.95
+            }}
 
             Available restaurants:
-            {json.dumps(restaurants_data, ensure_ascii=False, indent=2)}"""}
+            {json.dumps(restaurants_data, ensure_ascii=False)}
+            """}
         ]
     )
+
+    if response.model_extra.get('error'):
+        logger.error(f"Error from LLM: {response.model_extra['error']}")
+        raise RuntimeError("There was an error while the AI analyze your request. Please try again later.")
+
+
+
+    response_content = response.choices[0].message.content if response.choices else None
     logger.debug("Successfully received response from LLM")
-    logger.debug(f"LLM Response: {response.choices[0].message.content}")
+    logger.debug(f"LLM Response: {response_content}")
 
     # In a real application, we would parse the response and extract structured data
     # For this example, we'll return the raw response
@@ -75,7 +105,7 @@ def run_restaurant_recommendation_workflow(
         "prompt": prompt,
         "user_id": user_id,
         "restaurants_data": restaurants_data,
-        "response": response.choices[0].message.content
+        "analysis_response": response_content
     }
 
     logger.info("Restaurant recommendation workflow completed successfully")
@@ -206,6 +236,70 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return distance
 
 
+def parse_llm_response_to_json(response_content: str) -> Dict[str, Any]:
+    """
+    Parse the LLM response to extract JSON content.
+
+    Args:
+        response_content: The raw response content from the LLM
+
+    Returns:
+        Parsed JSON as a dictionary
+    """
+    if not response_content:
+        logger.warning("Empty response content received from LLM")
+        return {"selected_restaurants": [], "match_score": 0.0}
+
+    logger.debug("Attempting to parse LLM response to JSON")
+
+    try:
+        # First, try to parse the entire content as JSON
+        analysis = json.loads(response_content)
+        logger.debug("Successfully parsed entire content as JSON")
+        return analysis
+    except json.JSONDecodeError:
+        logger.warning("Failed to parse entire content as JSON, trying alternative methods")
+        # If that fails, try to extract JSON from the text
+        try:
+            # Look for JSON content between triple backticks
+            import re
+            logger.debug("Looking for JSON between triple backticks")
+            json_match = re.search(r'```json\s*([\s\S]*?)\s*```', response_content)
+            if json_match:
+                logger.debug("Found JSON between triple backticks")
+                json_str = json_match.group(1)
+                return json.loads(json_str)
+            else:
+                # Try to find JSON between curly braces
+                logger.debug("Looking for JSON between curly braces")
+                json_match = re.search(r'({[\s\S]*})', response_content)
+                if json_match:
+                    logger.debug("Found JSON between curly braces")
+                    json_str = json_match.group(1)
+                    return json.loads(json_str)
+                else:
+                    # Try to find JSON in a boxed format
+                    logger.debug("Looking for JSON in boxed format")
+                    boxed_match = re.search(r'\\boxed{([\s\S]*)}', response_content)
+                    if boxed_match:
+                        logger.debug("Found JSON in boxed format")
+                        boxed_content = boxed_match.group(1)
+                        # Now try to extract JSON from the boxed content
+                        json_in_box_match = re.search(r'```json\s*([\s\S]*?)\s*```', boxed_content)
+                        if json_in_box_match:
+                            logger.debug("Found JSON between triple backticks in boxed content")
+                            json_str = json_in_box_match.group(1)
+                            return json.loads(json_str)
+                        else:
+                            raise Exception("Could not extract JSON from boxed content")
+                    else:
+                        raise Exception("Could not extract JSON from LLM response")
+        except Exception as e:
+            logger.error(f"Error extracting JSON: {str(e)}", exc_info=True)
+            # Return empty result instead of raising exception
+            return {"selected_restaurants": [], "match_score": 0.0}
+
+
 async def get_restaurant_recommendations_service(
     prompt: str,
     coordinates: Coordinates,
@@ -256,101 +350,16 @@ async def get_restaurant_recommendations_service(
     # If we have restaurant data from GoFood
     if result.get("restaurants_data"):
         logger.debug(f"Processing {len(result.get('restaurants_data'))} restaurants from GoFood API")
-        # Use LLM to analyze which restaurants best match the user's preferences
-        llm = get_openai_client()
+
+        # Parse the LLM response to extract structured data
+        analysis_response = result.get("analysis_response")
+        logger.debug(f"Parsing analysis response from LLM")
 
         try:
-            logger.debug("Calling OpenAI API to analyze restaurants")
-            # Call OpenAI API to analyze restaurants
-            analysis_response = llm.chat.completions.create(
-                model=settings.OPENROUTER_MODEL,
-                temperature=0.7,
-                extra_headers={
-                    "HTTP-Referer": "https://gourmetguide.ai",
-                    "X-Title": "Gourmet Guide AI"
-                },
-                messages=[
-                    {"role": "system", "content": "You are a restaurant analysis assistant. Analyze restaurants based on user preferences."},
-                    {"role": "user", "content": f"""
-                    Based on the user's request: "{prompt}", analyze these restaurants and select the top {limit} matches.
-                    For each selected restaurant, provide:
-                    1. A brief explanation of why it matches the user's preferences
-                    2. What popular items they might enjoy there
-
-                    Respond in JSON format like this:
-                    {{
-                        "selected_restaurants": [
-                            {{
-                                "id": "restaurant_id",
-                                "explanation": "Why this restaurant matches the user's preferences",
-                                "popular_items": [
-                                    {{
-                                        "name": "Item name",
-                                        "description": "Brief description",
-                                        "price": estimated_price_in_rupiah
-                                    }}
-                                ]
-                            }}
-                        ],
-                        "match_score": 0.95
-                    }}
-
-                    Restaurant data: {json.dumps(result.get("restaurants_data"), ensure_ascii=False)}
-                    """}
-                ]
-            )
-
-            # Get the response content
-            response_content = analysis_response.choices[0].message.content if analysis_response.choices else None
-            logger.debug("Successfully received analysis response from OpenAI")
-            logger.debug(f"LLM Response: {response_content}")
-
             # Try to extract JSON from the response
-            try:
-                logger.debug("Attempting to parse JSON from LLM response")
-                # First, try to parse the entire content as JSON
-                analysis = json.loads(response_content)
-                logger.debug("Successfully parsed JSON from LLM response")
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse entire content as JSON, trying alternative methods")
-                # If that fails, try to extract JSON from the text
-                try:
-                    # Look for JSON content between triple backticks
-                    import re
-                    logger.debug("Looking for JSON between triple backticks")
-                    json_match = re.search(r'```json\s*([\s\S]*?)\s*```', response_content)
-                    if json_match:
-                        logger.debug("Found JSON between triple backticks")
-                        json_str = json_match.group(1)
-                        analysis = json.loads(json_str)
-                    else:
-                        # Try to find JSON between curly braces
-                        logger.debug("Looking for JSON between curly braces")
-                        json_match = re.search(r'({[\s\S]*})', response_content)
-                        if json_match:
-                            logger.debug("Found JSON between curly braces")
-                            json_str = json_match.group(1)
-                            analysis = json.loads(json_str)
-                        else:
-                            # Try to find JSON in a boxed format
-                            logger.debug("Looking for JSON in boxed format")
-                            boxed_match = re.search(r'\\boxed{([\s\S]*)}', response_content)
-                            if boxed_match:
-                                logger.debug("Found JSON in boxed format")
-                                boxed_content = boxed_match.group(1)
-                                # Now try to extract JSON from the boxed content
-                                json_in_box_match = re.search(r'```json\s*([\s\S]*?)\s*```', boxed_content)
-                                if json_in_box_match:
-                                    logger.debug("Found JSON between triple backticks in boxed content")
-                                    json_str = json_in_box_match.group(1)
-                                    analysis = json.loads(json_str)
-                                else:
-                                    raise Exception("Could not extract JSON from boxed content")
-                            else:
-                                raise Exception("Could not extract JSON from LLM response")
-                except Exception as e:
-                    logger.error(f"Error extracting JSON: {str(e)}", exc_info=True)
-                    raise Exception(f"Failed to parse JSON from LLM response: {str(e)}")
+            logger.debug("Attempting to parse JSON from LLM response")
+            analysis = parse_llm_response_to_json(analysis_response)
+            logger.debug("Successfully parsed JSON from LLM response")
 
             logger.info(f"Successfully analyzed {len(analysis.get('selected_restaurants', []))} restaurants")
 
@@ -403,57 +412,9 @@ async def get_restaurant_recommendations_service(
         except Exception as e:
             logger.error(f"Error processing restaurant analysis: {str(e)}", exc_info=True)
             print(f"Error processing restaurant analysis: {str(e)}")
-            raise Exception(f"Error processing restaurant analysis: {str(e)}")
-
-
-    # If we couldn't get any restaurants from the API or analysis, use mock data
-    if not restaurants:
-        logger.warning("No restaurants found from API or analysis, using mock data")
-        restaurants = [
-            Restaurant(
-                id="rest1",
-                name="Spice Garden",
-                rating=4.7,
-                priceRange="$$",
-                cuisineTypes=["Indian", "Spicy", "Vegetarian"],
-                address="123 Spice Lane, Jakarta",
-                coordinates=Coordinates(latitude=-6.2088, longitude=106.8456),
-                distance=1.2,
-                aiDescription="Spice Garden stands out for its authentic Indian flavors and generous vegetarian options. Their perfectly balanced spice levels cater to both spice enthusiasts and those who prefer milder tastes. The restaurant's warm ambiance and attentive service make it ideal for both casual dining and special occasions.",
-                popularItems=[
-                    FoodItem(
-                        id="item1",
-                        name="Vegetable Biryani",
-                        price=75000,
-                        description="Fragrant basmati rice cooked with mixed vegetables and aromatic spices",
-                        tags=["Vegetarian", "Spicy", "Popular"]
-                    ),
-                    FoodItem(
-                        id="item2",
-                        name="Paneer Tikka Masala",
-                        price=85000,
-                        description="Cubes of paneer cheese in a rich, creamy tomato sauce",
-                        tags=["Vegetarian", "Spicy", "Signature"]
-                    )
-                ],
-                openNow=True,
-                hours={
-                    "monday": "10:00 AM - 10:00 PM",
-                    "tuesday": "10:00 AM - 10:00 PM",
-                    "wednesday": "10:00 AM - 10:00 PM",
-                    "thursday": "10:00 AM - 10:00 PM",
-                    "friday": "10:00 AM - 11:00 PM",
-                    "saturday": "10:00 AM - 11:00 PM",
-                    "sunday": "11:00 AM - 9:00 PM"
-                }
-            ),
-            # Add more mock restaurants as needed
-        ]
-        logger.info("Added mock restaurant data")
-
 
     # Create the response with match score
-    match_score = 0.92  # Default match score
+    match_score = 0.7  # Default match score
     try:
         if "match_score" in analysis:
             match_score = float(analysis.get("match_score", 0.92))
