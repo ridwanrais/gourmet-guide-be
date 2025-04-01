@@ -395,7 +395,7 @@ async def get_restaurant_recommendations_service(
                         rating=data.get("ratings", 4.0),
                         priceRange=price_range,
                         cuisineTypes=data.get("cuisineTypes", []),
-                        address=f"GoFood Restaurant in Bali",
+                        address=data.get("location", {}).get("address", ""),
                         coordinates=Coordinates(
                             latitude=data.get("location", {}).get("latitude", coordinates.latitude),
                             longitude=data.get("location", {}).get("longitude", coordinates.longitude)

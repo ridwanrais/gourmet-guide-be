@@ -6,34 +6,46 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable, GeocoderServiceError
 import asyncio
 from functools import partial
+import random
 
 # Initialize the geocoder with a meaningful user agent
 geocoder = Nominatim(user_agent="gourmet_guide_api")
+
+# Predefined list of food preference suggestions
+FOOD_SUGGESTIONS = [
+    "I'm in the mood for something spicy",
+    "I want a quick and affordable meal",
+    "I'm craving something comforting and hearty",
+    "I want a healthy and light option",
+    "I'm looking for something vegan-friendly",
+    "I want a place with a great atmosphere",
+    "I'm in the mood for something sweet",
+    "I want a place with quick delivery",
+    "I'm craving comfort food",
+    "I want something with lots of vegetables",
+    "I'm looking for a place with good portion sizes",
+    "I want something that's not too heavy",
+    "I'm in the mood for street food",
+    "I want a place with great reviews",
+    "I'm craving something with noodles",
+    "I want something that's easy to share",
+    "I'm in the mood for something with rice",
+    "I want a place with good sides",
+    "I'm looking for something with a nice presentation",
+    "I want something that's not too spicy"
+]
 
 async def generate_food_preference_suggestions(count: int = 5) -> List[str]:
     """
     Generate a list of food preference suggestions.
     
-    This function uses a language model to generate contextual food preference suggestions.
+    This function returns a random selection of predefined food preferences.
     """
-    # Get LLM with Deepseek R1 model from OpenRouter
-    llm = get_llm()
+    # Ensure count is within bounds
+    count = min(count, len(FOOD_SUGGESTIONS))
     
-    # Create a prompt for food preference suggestions
-    prompt = f"""Generate {count} diverse and interesting food preferences or cuisines that someone might be interested in.
-    Each suggestion should be a single line with no numbering or bullet points.
-    Be creative and include a mix of specific dishes, cuisine types, and dietary preferences."""
-    
-    # Get the response from the LLM
-    response = llm.invoke(prompt)
-    
-    # Process the response to extract suggestions
-    suggestions = [line.strip() for line in response.content.split('\n') if line.strip()]
-    
-    # Limit to the requested count
-    suggestions = suggestions[:count]
-    
-    return suggestions
+    # Return a random selection of suggestions
+    return random.sample(FOOD_SUGGESTIONS, count)
 
 
 async def geocode_address_service(address: str) -> CoordinatesResponse:
