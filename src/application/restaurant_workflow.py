@@ -8,7 +8,10 @@ from src.domain.value_objects import (
     Restaurant, Coordinates, FoodItem, RecommendationsResponse
 )
 from src.config import settings
+from src.utils.logging_config import get_logger
 
+# Initialize logger
+logger = get_logger(__name__)
 
 def run_restaurant_recommendation_workflow(
     coordinates: Coordinates,
@@ -33,13 +36,19 @@ def run_restaurant_recommendation_workflow(
     Returns:
         A dictionary containing the workflow result
     """
+    logger.info(f"Starting restaurant recommendation workflow: coordinates={coordinates}, prompt='{prompt}', limit={limit}")
+
     # First, fetch real restaurant data from GoFood API
+    logger.debug(f"Fetching restaurant data from GoFood API for coordinates: {coordinates}")
     restaurants_data = fetch_restaurants_from_gofood(coordinates)
+    logger.info(f"Retrieved {len(restaurants_data)} restaurants from GoFood API")
 
     # Get LLM with Deepseek R1 model from OpenRouter
+    logger.debug("Initializing OpenAI client for LLM processing")
     llm = get_openai_client()
 
     # Get the response from the LLM
+    logger.debug(f"Sending request to LLM with model={settings.OPENROUTER_MODEL}")
     response = llm.chat.completions.create(
         model=settings.OPENROUTER_MODEL,
         temperature=0.7,
@@ -56,16 +65,21 @@ def run_restaurant_recommendation_workflow(
             {json.dumps(restaurants_data, ensure_ascii=False, indent=2)}"""}
         ]
     )
+    logger.debug("Successfully received response from LLM")
+    logger.debug(f"LLM Response: {response.choices[0].message.content}")
 
     # In a real application, we would parse the response and extract structured data
     # For this example, we'll return the raw response
-    return {
+    result = {
         "coordinates": {"latitude": coordinates.latitude, "longitude": coordinates.longitude},
         "prompt": prompt,
         "user_id": user_id,
         "restaurants_data": restaurants_data,
         "response": response.choices[0].message.content
     }
+
+    logger.info("Restaurant recommendation workflow completed successfully")
+    return result
 
 
 def fetch_restaurants_from_gofood(coordinates: Coordinates) -> List[Dict[str, Any]]:
@@ -78,11 +92,14 @@ def fetch_restaurants_from_gofood(coordinates: Coordinates) -> List[Dict[str, An
     Returns:
         List of restaurant data from GoFood API
     """
+    logger.info(f"Fetching restaurants from GoFood API for coordinates: {coordinates}")
     # Find the nearest service area based on coordinates
     service_area, locality = get_nearest_service_area(coordinates)
+    logger.debug(f"Using service area: {service_area}, locality: {locality}")
 
     # Construct the GoFood API URL
     url = f"https://gofood.co.id/_next/data/16.0.0/en/{service_area}/{locality}-restaurants/near_me.json?service_area={service_area}"
+    logger.debug(f"GoFood API URL: {url}")
 
     try:
         # Make the API request
@@ -90,14 +107,18 @@ def fetch_restaurants_from_gofood(coordinates: Coordinates) -> List[Dict[str, An
             "User-Agent": "GourmetGuideAPI/1.0",
             "Accept": "application/json"
         }
+        logger.debug("Sending request to GoFood API")
         response = requests.get(url, headers=headers)
+        logger.debug(f"GoFood API response status code: {response.status_code}")
 
         # Check if the request was successful
         if response.status_code == 200:
             data = response.json()
+            logger.debug("Successfully parsed GoFood API response as JSON")
 
             # Extract the outlets from the response
             outlets = data.get("pageProps", {}).get("outlets", [])
+            logger.info(f"Found {len(outlets)} outlets in GoFood API response")
 
             # Process the outlets to extract relevant information
             processed_outlets = []
@@ -116,13 +137,16 @@ def fetch_restaurants_from_gofood(coordinates: Coordinates) -> List[Dict[str, An
                     }
                     processed_outlets.append(processed_outlet)
 
+            logger.info(f"Processed {len(processed_outlets)} outlets from GoFood API")
             return processed_outlets
         else:
             # If the request failed, return an empty list
+            logger.warning(f"Failed to fetch data from GoFood API: {response.status_code}")
             print(f"Failed to fetch data from GoFood API: {response.status_code}")
             return []
     except Exception as e:
         # If an exception occurred, return an empty list
+        logger.error(f"Error fetching data from GoFood API: {str(e)}", exc_info=True)
         print(f"Error fetching data from GoFood API: {str(e)}")
         return []
 
@@ -139,8 +163,10 @@ def get_nearest_service_area(coordinates: Coordinates) -> Tuple[str, str]:
     Returns:
         Tuple of (service_area, locality)
     """
+    logger.debug(f"Finding nearest service area for coordinates: {coordinates}")
     # For now, we'll just return Bali and Kuta Utara as defaults
     # In a real application, this would use a more sophisticated approach
+    logger.debug("Using default service area: bali, locality: kuta-utara")
     return "bali", "kuta-utara"
 
 
@@ -157,6 +183,7 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     Returns:
         Distance in kilometers
     """
+    logger.debug(f"Calculating distance between ({lat1}, {lon1}) and ({lat2}, {lon2})")
     # Radius of the Earth in kilometers
     R = 6371.0
 
@@ -175,6 +202,7 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     distance = R * c
 
+    logger.debug(f"Calculated distance: {distance:.2f} km")
     return distance
 
 
@@ -200,14 +228,19 @@ async def get_restaurant_recommendations_service(
     Returns:
         Restaurant recommendations with match score
     """
+    logger.info(f"Starting restaurant recommendation service: coordinates={coordinates}, prompt='{prompt}'")
+
     # Generate a session ID for tracking this recommendation request
     session_id = str(uuid.uuid4())
+    logger.debug(f"Generated session ID: {session_id}")
 
     # Set default values if not provided
     radius = radius or 5.0
     limit = limit or 5
+    logger.debug(f"Using radius={radius}km, limit={limit}")
 
     # Run the restaurant recommendation workflow using LangGraph
+    logger.debug("Running restaurant recommendation workflow")
     result = run_restaurant_recommendation_workflow(
         coordinates=coordinates,
         prompt=prompt,
@@ -215,16 +248,19 @@ async def get_restaurant_recommendations_service(
         radius=radius,
         limit=limit
     )
+    logger.debug("Restaurant recommendation workflow completed")
 
     # Process the restaurants data from GoFood API
     restaurants = []
 
     # If we have restaurant data from GoFood
     if result.get("restaurants_data"):
+        logger.debug(f"Processing {len(result.get('restaurants_data'))} restaurants from GoFood API")
         # Use LLM to analyze which restaurants best match the user's preferences
         llm = get_openai_client()
 
         try:
+            logger.debug("Calling OpenAI API to analyze restaurants")
             # Call OpenAI API to analyze restaurants
             analysis_response = llm.chat.completions.create(
                 model=settings.OPENROUTER_MODEL,
@@ -263,41 +299,67 @@ async def get_restaurant_recommendations_service(
                     """}
                 ]
             )
-            
+
             # Get the response content
-            response_content = analysis_response.choices[0].message.content
-            print(f"LLM Response: {response_content}")
-            
+            response_content = analysis_response.choices[0].message.content if analysis_response.choices else None
+            logger.debug("Successfully received analysis response from OpenAI")
+            logger.debug(f"LLM Response: {response_content}")
+
             # Try to extract JSON from the response
             try:
+                logger.debug("Attempting to parse JSON from LLM response")
                 # First, try to parse the entire content as JSON
                 analysis = json.loads(response_content)
+                logger.debug("Successfully parsed JSON from LLM response")
             except json.JSONDecodeError:
+                logger.warning("Failed to parse entire content as JSON, trying alternative methods")
                 # If that fails, try to extract JSON from the text
                 try:
                     # Look for JSON content between triple backticks
                     import re
+                    logger.debug("Looking for JSON between triple backticks")
                     json_match = re.search(r'```json\s*([\s\S]*?)\s*```', response_content)
                     if json_match:
+                        logger.debug("Found JSON between triple backticks")
                         json_str = json_match.group(1)
                         analysis = json.loads(json_str)
                     else:
                         # Try to find JSON between curly braces
+                        logger.debug("Looking for JSON between curly braces")
                         json_match = re.search(r'({[\s\S]*})', response_content)
                         if json_match:
+                            logger.debug("Found JSON between curly braces")
                             json_str = json_match.group(1)
                             analysis = json.loads(json_str)
                         else:
-                            raise Exception("Could not extract JSON from LLM response")
+                            # Try to find JSON in a boxed format
+                            logger.debug("Looking for JSON in boxed format")
+                            boxed_match = re.search(r'\\boxed{([\s\S]*)}', response_content)
+                            if boxed_match:
+                                logger.debug("Found JSON in boxed format")
+                                boxed_content = boxed_match.group(1)
+                                # Now try to extract JSON from the boxed content
+                                json_in_box_match = re.search(r'```json\s*([\s\S]*?)\s*```', boxed_content)
+                                if json_in_box_match:
+                                    logger.debug("Found JSON between triple backticks in boxed content")
+                                    json_str = json_in_box_match.group(1)
+                                    analysis = json.loads(json_str)
+                                else:
+                                    raise Exception("Could not extract JSON from boxed content")
+                            else:
+                                raise Exception("Could not extract JSON from LLM response")
                 except Exception as e:
-                    print(f"Error extracting JSON: {str(e)}")
+                    logger.error(f"Error extracting JSON: {str(e)}", exc_info=True)
                     raise Exception(f"Failed to parse JSON from LLM response: {str(e)}")
-            
+
+            logger.info(f"Successfully analyzed {len(analysis.get('selected_restaurants', []))} restaurants")
+
             # Create Restaurant objects from the analysis
             for selected in analysis.get("selected_restaurants", []):
                 restaurant_id = selected.get("id")
                 if restaurant_id in [r.get("id") for r in result.get("restaurants_data")]:
                     data = next(r for r in result.get("restaurants_data") if r.get("id") == restaurant_id)
+                    logger.debug(f"Processing restaurant: {data.get('name')}")
 
                     # Create popular items
                     popular_items = []
@@ -311,6 +373,7 @@ async def get_restaurant_recommendations_service(
                                 tags=[]
                             )
                         )
+                    logger.debug(f"Added {len(popular_items)} popular items for restaurant {data.get('name')}")
 
                     # Map price level to price range
                     price_ranges = {1: "$", 2: "$$", 3: "$$$", 4: "$$$$"}
@@ -336,12 +399,16 @@ async def get_restaurant_recommendations_service(
                     )
 
                     restaurants.append(restaurant)
+                    logger.debug(f"Added restaurant {data.get('name')} to recommendations")
         except Exception as e:
+            logger.error(f"Error processing restaurant analysis: {str(e)}", exc_info=True)
             print(f"Error processing restaurant analysis: {str(e)}")
             raise Exception(f"Error processing restaurant analysis: {str(e)}")
 
+
     # If we couldn't get any restaurants from the API or analysis, use mock data
     if not restaurants:
+        logger.warning("No restaurants found from API or analysis, using mock data")
         restaurants = [
             Restaurant(
                 id="rest1",
@@ -382,7 +449,7 @@ async def get_restaurant_recommendations_service(
             ),
             # Add more mock restaurants as needed
         ]
-
+        logger.info("Added mock restaurant data")
 
 
     # Create the response with match score
@@ -390,12 +457,15 @@ async def get_restaurant_recommendations_service(
     try:
         if "match_score" in analysis:
             match_score = float(analysis.get("match_score", 0.92))
+            logger.debug(f"Using match score from analysis: {match_score}")
     except:
+        logger.warning("Could not extract match score from analysis, using default")
         pass
 
     response = RecommendationsResponse(
         restaurants=restaurants,
         matchScore=match_score
     )
+    logger.info(f"Created response with {len(restaurants)} restaurants and match score {match_score}")
 
     return response, session_id

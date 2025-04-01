@@ -5,6 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import settings
 from src.infrastructure.database import get_db
 from src.presentation.routes import location, preferences, restaurants
+from src.utils.logging_config import setup_logging
+
+# Set up logging
+logger = setup_logging()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

@@ -8,6 +8,10 @@ from src.infrastructure.database import get_db
 from src.application.restaurant_workflow import get_restaurant_recommendations_service
 from src.adapters.repositories import RestaurantRepository
 from src.utils.error_handlers import ErrorHandlers
+from src.utils.logging_config import get_logger
+
+# Initialize logger
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/restaurants", tags=["restaurants"])
 
@@ -23,8 +27,11 @@ async def get_restaurant_recommendations(
     This endpoint uses LangGraph to process the user's query and generate restaurant recommendations.
     The results are stored in TimescaleDB for future reference and analytics.
     """
+    logger.info(f"Received recommendation request: coordinates={request.coordinates}, prompt='{request.prompt}'")
+    
     try:
         # Call the application service to get restaurant recommendations
+        logger.debug("Calling restaurant recommendation service")
         response, session_id = await get_restaurant_recommendations_service(
             prompt=request.prompt,
             coordinates=request.coordinates,
@@ -32,8 +39,10 @@ async def get_restaurant_recommendations(
             radius=request.radius,
             limit=request.limit
         )
+        logger.info(f"Generated {len(response.restaurants)} restaurant recommendations with session_id={session_id}")
         
         # Use the repository to save the recommendation to the database
+        logger.debug(f"Saving recommendation to database with session_id={session_id}")
         restaurant_repo = RestaurantRepository(db)
         await restaurant_repo.save_recommendation(
             session_id=session_id,
@@ -43,8 +52,10 @@ async def get_restaurant_recommendations(
             recommendations=response.restaurants,
             match_score=response.matchScore
         )
+        logger.info(f"Successfully saved recommendation to database with session_id={session_id}")
         
         return response
         
     except Exception as e:
+        logger.error(f"Error processing restaurant recommendation request: {str(e)}", exc_info=True)
         ErrorHandlers.handle_invalid_request(e)
