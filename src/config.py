@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your_secret_key_for_jwt")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     
+    # GoFood API settings
+    GOFOOD_COOKIE: str = os.getenv("GOFOOD_COOKIE", "")
+    
     # Database URL
     @property
     def DATABASE_URL(self) -> str:

@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Any, List, Optional, Tuple
 import json
 import uuid
@@ -9,11 +10,15 @@ from src.domain.value_objects import (
 )
 from src.config import settings
 from src.utils.logging_config import get_logger
+from src.application.services import reverse_geocode_service
+import random
+import time
+import urllib.parse
 
 # Initialize logger
 logger = get_logger(__name__)
 
-def run_restaurant_recommendation_workflow(
+async def run_restaurant_recommendation_workflow(
     coordinates: Coordinates,
     prompt: str,
     user_id: str = None,
@@ -40,7 +45,7 @@ def run_restaurant_recommendation_workflow(
 
     # First, fetch real restaurant data from GoFood API
     logger.debug(f"Fetching restaurant data from GoFood API for coordinates: {coordinates}")
-    restaurants_data = fetch_restaurants_from_gofood(coordinates)
+    restaurants_data = await fetch_restaurants_from_gofood(coordinates)
     logger.info(f"Retrieved {len(restaurants_data)} restaurants from GoFood API")
 
     # Get LLM with Deepseek R1 model from OpenRouter
@@ -112,7 +117,7 @@ def run_restaurant_recommendation_workflow(
     return result
 
 
-def fetch_restaurants_from_gofood(coordinates: Coordinates) -> List[Dict[str, Any]]:
+async def fetch_restaurants_from_gofood(coordinates: Coordinates) -> List[Dict[str, Any]]:
     """
     Fetch restaurant data from GoFood API based on coordinates.
 
@@ -123,27 +128,29 @@ def fetch_restaurants_from_gofood(coordinates: Coordinates) -> List[Dict[str, An
         List of restaurant data from GoFood API
     """
     logger.info(f"Fetching restaurants from GoFood API for coordinates: {coordinates}")
-    # Find the nearest service area based on coordinates
-    service_area, locality = get_nearest_service_area(coordinates)
-    logger.debug(f"Using service area: {service_area}, locality: {locality}")
-
-    # Construct the GoFood API URL
-    url = f"https://gofood.co.id/_next/data/16.0.0/en/{service_area}/{locality}-restaurants/near_me.json?service_area={service_area}"
-    logger.debug(f"GoFood API URL: {url}")
-
+    
     try:
+        # Find the nearest service area based on coordinates
+        service_area, locality = await get_nearest_service_area(coordinates)
+        logger.debug(f"Using service area: {service_area}, locality: {locality}")
+
+        # Construct the GoFood API URL
+        url = f"https://gofood.co.id/_next/data/16.0.0/en/{service_area}/{locality}-restaurants/near_me.json?service_area={service_area}"
+        logger.debug(f"GoFood API URL: {url}")
+
         # Make the API request
         headers = {
             "User-Agent": "GourmetGuideAPI/1.0",
             "Accept": "application/json"
         }
         logger.debug("Sending request to GoFood API")
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         logger.debug(f"GoFood API response status code: {response.status_code}")
 
         # Check if the request was successful
         if response.status_code == 200:
             data = response.json()
+            
             logger.debug("Successfully parsed GoFood API response as JSON")
 
             # Extract the outlets from the response
@@ -170,22 +177,24 @@ def fetch_restaurants_from_gofood(coordinates: Coordinates) -> List[Dict[str, An
             logger.info(f"Processed {len(processed_outlets)} outlets from GoFood API")
             return processed_outlets
         else:
-            # If the request failed, return an empty list
             logger.warning(f"Failed to fetch data from GoFood API: {response.status_code}")
             print(f"Failed to fetch data from GoFood API: {response.status_code}")
             return []
+            
+    except RuntimeError as e:
+        # This is the error raised when get_nearest_service_area fails
+        logger.error(f"Service area determination failed: {str(e)}")
+        print(f"Service area determination failed: {str(e)}")
+        return []
     except Exception as e:
-        # If an exception occurred, return an empty list
-        logger.error(f"Error fetching data from GoFood API: {str(e)}", exc_info=True)
-        print(f"Error fetching data from GoFood API: {str(e)}")
+        logger.error(f"Error fetching restaurants from GoFood API: {str(e)}", exc_info=True)
+        print(f"Error fetching restaurants from GoFood API: {str(e)}")
         return []
 
 
-def get_nearest_service_area(coordinates: Coordinates) -> Tuple[str, str]:
+async def get_nearest_service_area(coordinates: Coordinates) -> Tuple[str, str]:
     """
     Get the nearest service area and locality based on coordinates.
-    This is a simplified version that returns default values for Bali.
-    In a real application, this would use a more sophisticated approach.
 
     Args:
         coordinates: The user's location coordinates
@@ -194,10 +203,85 @@ def get_nearest_service_area(coordinates: Coordinates) -> Tuple[str, str]:
         Tuple of (service_area, locality)
     """
     logger.debug(f"Finding nearest service area for coordinates: {coordinates}")
-    # For now, we'll just return Bali and Kuta Utara as defaults
-    # In a real application, this would use a more sophisticated approach
-    logger.debug("Using default service area: bali, locality: kuta-utara")
-    return "bali", "kuta-utara"
+
+    try:
+        # First, use reverse geocoding to get the address information
+        address_response = await reverse_geocode_service(coordinates.latitude, coordinates.longitude)
+        
+        # Use the formatted address as search keyword
+        formatted_address = address_response.formattedAddress
+        search_keyword = formatted_address.replace(" ", "%20")
+        
+        logger.debug(f"Using search keyword: {search_keyword}")
+        
+        
+        # Use GoFood API to search for locations using the keyword
+        search_url = f"https://gofood.co.id/api/poi/search?keyword={search_keyword}"
+        logger.debug(f"Searching GoFood POI API: {search_url}")
+        
+        # Make the request to the GoFood API with cookie header
+        headers = {
+            'cookie': settings.GOFOOD_COOKIE,
+            "User-Agent": "GourmetGuideAPI/1.0",
+            "Accept": "application/json"
+        }
+        
+        try:
+            response = requests.get(search_url, headers=headers, timeout=10)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            
+            # Parse the response
+            locations = response.json()
+            
+            if locations and len(locations) > 0:
+                # Find the nearest location from the results
+                nearest_location = None
+                min_distance = float('inf')
+                
+                for location in locations:
+                    loc_lat = location.get("latitude")
+                    loc_lng = location.get("longitude")
+                    
+                    if loc_lat is not None and loc_lng is not None:
+                        # Calculate distance to this location
+                        distance = calculate_distance(
+                            coordinates.latitude, coordinates.longitude,
+                            loc_lat, loc_lng
+                        )
+                        
+                        # Update nearest location if this one is closer
+                        if distance < min_distance:
+                            min_distance = distance
+                            nearest_location = location
+                
+                if nearest_location:
+                    # Extract service area and locality from the nearest location
+                    service_area = nearest_location.get("service_area_name", "").lower()
+                    locality = nearest_location.get("locality_name", "").lower()
+                    
+                    # If locality is missing, try to use service area
+                    if not locality:
+                        locality = service_area
+                    
+                    logger.debug(f"Determined service area: {service_area}, locality: {locality} (distance: {min_distance:.2f} km)")
+                    return service_area, locality
+        
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error searching GoFood POI API: {str(e)}", exc_info=True)
+            print(f"Error searching GoFood POI API: {str(e)}")
+        
+        # Fallback to using the geocoded address if no suitable location found
+        logger.warning("No suitable location found from GoFood POI API, falling back to geocoded address")
+        locality = (address_response.city or address_response.state or "bali").lower()
+        service_area = address_response.state.lower() if address_response.state else "bali"
+        
+        logger.debug(f"Fallback service area: {service_area}, locality: {locality}")
+        return service_area, locality
+
+    except Exception as e:
+        logger.error(f"Error determining service area: {str(e)}", exc_info=True)
+        # Fallback to default values for Bali
+        raise RuntimeError("Failed to determine service area and locality")
 
 
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -335,7 +419,7 @@ async def get_restaurant_recommendations_service(
 
     # Run the restaurant recommendation workflow using LangGraph
     logger.debug("Running restaurant recommendation workflow")
-    result = run_restaurant_recommendation_workflow(
+    result = await run_restaurant_recommendation_workflow(
         coordinates=coordinates,
         prompt=prompt,
         user_id=user_id,
