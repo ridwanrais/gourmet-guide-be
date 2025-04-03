@@ -430,7 +430,11 @@ async def get_restaurant_recommendations_service(
 
     # Process the restaurants data from GoFood API
     restaurants = []
-
+    
+    # Get service area for URL generation
+    service_area, _ = await get_nearest_service_area(coordinates)
+    logger.debug(f"Using service area for URLs: {service_area}")
+    
     # If we have restaurant data from GoFood
     if result.get("restaurants_data"):
         logger.debug(f"Processing {len(result.get('restaurants_data'))} restaurants from GoFood API")
@@ -439,73 +443,62 @@ async def get_restaurant_recommendations_service(
         analysis_response = result.get("analysis_response")
         logger.debug(f"Parsing analysis response from LLM")
 
-        try:
-            # Try to extract JSON from the response
-            logger.debug("Attempting to parse JSON from LLM response")
-            analysis = parse_llm_response_to_json(analysis_response)
-            logger.debug("Successfully parsed JSON from LLM response")
+        analysis = parse_llm_response_to_json(analysis_response)
+        logger.debug("Successfully parsed JSON from LLM response")
 
-            logger.info(f"Successfully analyzed {len(analysis.get('selected_restaurants', []))} restaurants")
+        logger.info(f"Successfully analyzed {len(analysis.get('selected_restaurants', []))} restaurants")
 
-            # Create Restaurant objects from the analysis
-            for selected in analysis.get("selected_restaurants", []):
-                restaurant_id = selected.get("id")
-                if restaurant_id in [r.get("id") for r in result.get("restaurants_data")]:
-                    data = next(r for r in result.get("restaurants_data") if r.get("id") == restaurant_id)
-                    logger.debug(f"Processing restaurant: {data.get('name')}")
+        # Create Restaurant objects from the analysis
+        for selected in analysis.get("selected_restaurants", []):
+            restaurant_id = selected.get("id")
+            if restaurant_id in [r.get("id") for r in result.get("restaurants_data")]:
+                data = next(r for r in result.get("restaurants_data") if r.get("id") == restaurant_id)
+                logger.debug(f"Processing restaurant: {data.get('name')}")
 
-                    # Create popular items
-                    popular_items = []
-                    for item in selected.get("popular_items", []):
-                        popular_items.append(
-                            FoodItem(
-                                id=f"item_{uuid.uuid4()}",
-                                name=item.get("name", ""),
-                                price=item.get("price", 0),
-                                description=item.get("description", ""),
-                                tags=[]
-                            )
+                # Create popular items
+                popular_items = []
+                for item in selected.get("popular_items", []):
+                    popular_items.append(
+                        FoodItem(
+                            id=f"item_{uuid.uuid4()}",
+                            name=item.get("name", ""),
+                            price=item.get("price", 0),
+                            description=item.get("description", ""),
+                            tags=[]
                         )
-                    logger.debug(f"Added {len(popular_items)} popular items for restaurant {data.get('name')}")
-
-                    # Map price level to price range
-                    price_ranges = {1: "$", 2: "$$", 3: "$$$", 4: "$$$$"}
-                    price_range = price_ranges.get(data.get("priceLevel", 2), "$$")
-
-                    # Create the restaurant object
-                    restaurant = Restaurant(
-                        id=data.get("id", ""),
-                        name=data.get("name", ""),
-                        rating=data.get("ratings", 4.0),
-                        priceRange=price_range,
-                        cuisineTypes=data.get("cuisineTypes", []),
-                        address=data.get("location", {}).get("address", ""),
-                        coordinates=Coordinates(
-                            latitude=data.get("location", {}).get("latitude", coordinates.latitude),
-                            longitude=data.get("location", {}).get("longitude", coordinates.longitude)
-                        ),
-                        distance=data.get("distance", 0),
-                        aiDescription=selected.get("explanation", ""),
-                        popularItems=popular_items,
-                        openNow=True,
-                        hours={}
                     )
+                logger.debug(f"Added {len(popular_items)} popular items for restaurant {data.get('name')}")
 
-                    restaurants.append(restaurant)
-                    logger.debug(f"Added restaurant {data.get('name')} to recommendations")
-        except Exception as e:
-            logger.error(f"Error processing restaurant analysis: {str(e)}", exc_info=True)
-            print(f"Error processing restaurant analysis: {str(e)}")
+                # Map price level to price range
+                price_ranges = {1: "$", 2: "$$", 3: "$$$", 4: "$$$$"}
+                price_range = price_ranges.get(data.get("priceLevel", 2), "$$")
 
+                # Create the restaurant object
+                restaurant = Restaurant(
+                    id=data.get("id", ""),
+                    name=data.get("name", ""),
+                    rating=data.get("ratings", 4.0),
+                    priceRange=price_range,
+                    cuisineTypes=data.get("cuisineTypes", []),
+                    address=data.get("location", {}).get("address", ""),
+                    coordinates=Coordinates(
+                        latitude=data.get("location", {}).get("latitude", coordinates.latitude),
+                        longitude=data.get("location", {}).get("longitude", coordinates.longitude)
+                    ),
+                    distance=data.get("distance", 0),
+                    gojekUrl=f"https://gofood.co.id/en/{service_area}/restaurant/{data.get('id', '')}",
+                    aiDescription=selected.get("explanation", ""),
+                    popularItems=popular_items,
+                    openNow=True,
+                    hours={}
+                )
+
+                restaurants.append(restaurant)
+                logger.debug(f"Added restaurant {data.get('name')} to recommendations")
+    
     # Create the response with match score
-    match_score = 0.7  # Default match score
-    try:
-        if "match_score" in analysis:
-            match_score = float(analysis.get("match_score", 0.92))
-            logger.debug(f"Using match score from analysis: {match_score}")
-    except:
-        logger.warning("Could not extract match score from analysis, using default")
-        pass
+    match_score = analysis.get("match_score", 0.7)
+    logger.debug(f"Using match score from analysis: {match_score}")
 
     response = RecommendationsResponse(
         restaurants=restaurants,

@@ -83,6 +83,7 @@ class Restaurant(BaseModel):
     address: str = Field(..., example="123 Spice Lane, Jakarta")
     coordinates: Coordinates
     distance: float = Field(..., example=1.2, description="Distance in kilometers from the user's location")
+    gojekUrl: str = Field(..., example="https://gofood.co.id/en/yogyakarta/restaurant/291b1f35-5f17-4dc7-89c2-27e7deb0e615", description="GoFood URL for the restaurant")
     aiDescription: str = Field(
         ...,
         example="Spice Garden stands out for its authentic Indian flavors and generous vegetarian options. Their perfectly balanced spice levels cater to both spice enthusiasts and those who prefer milder tastes. The restaurant's warm ambiance and attentive service make it ideal for both casual dining and special occasions.",
