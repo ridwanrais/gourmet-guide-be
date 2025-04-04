@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set environment variables from secrets
-ENV DB_HOST=localhost \
+ENV DB_HOST=timescaledb \
     DB_PORT=5432 \
     DB_USER=postgres \
     DB_NAME=gourmet_guide \
