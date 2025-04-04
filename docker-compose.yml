@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  app:
+    build: .
+    container_name: gourmet_guide_app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@timescaledb:5432/gourmet_guide
+    depends_on:
+      - timescaledb
+    restart: unless-stopped
+    volumes:
+      - .:/app
+
   timescaledb:
     image: timescale/timescaledb:latest-pg14
     container_name: gourmet_guide_timescaledb
