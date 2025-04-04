@@ -17,8 +17,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Set environment variables
-ENV PYTHONPATH=/app
+# Set environment variables from secrets
+ENV DB_HOST=localhost \
+    DB_PORT=5432 \
+    DB_USER=postgres \
+    DB_NAME=gourmet_guide \
+    API_V1_PREFIX=/v1 \
+    OPENROUTER_BASE_URL=https://openrouter.ai/api/v1 \
+    OPENROUTER_MODEL=deepseek/deepseek-chat-v3-0324:free \
+    ACCESS_TOKEN_EXPIRE_MINUTES=30 \
+    LOG_FORMAT=json
 
 # Command to run the application
 CMD ["python", "run.py"]
