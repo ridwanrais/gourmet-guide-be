@@ -44,7 +44,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         db_status = "connected"
     except Exception as e:
         db_status = f"error: {str(e)}"
-    
+
     return {
         "status": "ok",
         "api_version": "1.0.0",
@@ -54,4 +54,4 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8080, reload=True)

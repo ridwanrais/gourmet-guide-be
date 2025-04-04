@@ -88,7 +88,7 @@ gourmet-guide-api/
    # Install Python 3.11 if not already installed
    # On macOS with Homebrew:
    # brew install python@3.11
-   
+
    # Create virtual environment with Python 3.11
    python3.11 -m venv venv
    source venv/bin/activate
@@ -103,7 +103,7 @@ gourmet-guide-api/
 6. **Run ngrok for local development**
 
    ```bash
-   ngrok http --url=catfish-right-tick.ngrok-free.app 8000 --host-header=rewrite
+   ngrok http --url=catfish-right-tick.ngrok-free.app 8080 --host-header=rewrite
    ```
 
 7. **Run the application**
@@ -111,8 +111,8 @@ gourmet-guide-api/
    ```bash
    python run.py
    ```
- 
-   The API will be available at `http://localhost:8000`.
+
+   The API will be available at `http://localhost:8080`.
 
 8. **Testing OpenRouter Integration**
 
@@ -144,8 +144,8 @@ gourmet-guide-api/
 
 Once the API is running, you can access the interactive documentation:
 
-- Swagger UI: `http://localhost:8000/v1/docs`
-- ReDoc: `http://localhost:8000/v1/redoc`
+- Swagger UI: `http://localhost:8080/v1/docs`
+- ReDoc: `http://localhost:8080/v1/redoc`
 
 ## Clean Architecture
 
@@ -164,10 +164,12 @@ This architecture provides better separation of concerns, testability, and maint
 If you encounter issues:
 
 1. **Database Connection**
+
    - Ensure TimescaleDB container is running: `docker ps`
    - Check logs: `docker logs gourmet_guide_timescaledb`
 
 2. **OpenRouter API**
+
    - Verify your API key is correct
    - Check if you have sufficient credits on your OpenRouter account
 

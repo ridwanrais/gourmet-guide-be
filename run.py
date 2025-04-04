@@ -14,6 +14,6 @@ if __name__ == "__main__":
     asyncio.run(setup())
     
     # Start the FastAPI application
-    port = int(os.getenv("PORT", 8000))  # Changed default port to 8000
+    port = int(os.getenv("PORT", 8080))  # Changed default port to 8080
     print(f"Starting Gourmet Guide API server on port {port}...")
     uvicorn.run("src.main:app", host="0.0.0.0", port=port, reload=True)
