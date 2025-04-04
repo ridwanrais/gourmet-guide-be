@@ -116,3 +116,7 @@ temp/
 
 # Cached data
 .cache/
+
+# Personal files
+personal_README.md
+README.md
