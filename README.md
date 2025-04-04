@@ -111,7 +111,7 @@ gourmet-guide-api/
    ```bash
    python run.py
    ```
-
+ 
    The API will be available at `http://localhost:8000`.
 
 8. **Testing OpenRouter Integration**
