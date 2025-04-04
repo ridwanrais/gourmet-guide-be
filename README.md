@@ -100,7 +100,13 @@ gourmet-guide-api/
    pip install -r requirements.txt
    ```
 
-6. **Run the application**
+6. **Run ngrok for local development**
+
+   ```bash
+   ngrok http --url=catfish-right-tick.ngrok-free.app 8000 --host-header=rewrite
+   ```
+
+7. **Run the application**
 
    ```bash
    python run.py
@@ -108,7 +114,7 @@ gourmet-guide-api/
 
    The API will be available at `http://localhost:8000`.
 
-7. **Testing OpenRouter Integration**
+8. **Testing OpenRouter Integration**
 
    If you want to test just the OpenRouter integration with the Deepseek R1 model:
 
