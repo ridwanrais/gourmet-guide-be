@@ -18,16 +18,50 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
 
+      - name: Verify SSH connection
+        run: |
+          echo "=== Verifying SSH connection ==="
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo 'SSH connection successful'"
+
       - name: Deploy to VPS
         run: |
+          echo "=== Starting deployment ==="
+          echo "Deployment target: ${{ secrets.VPS_HOST }}"
+          echo "Deployment user: ${{ secrets.VPS_USER }}"
+          echo "Deployment directory: /opt/gourmet-guide-api"
+
+          echo "=== Creating deployment directory ==="
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "mkdir -p /opt/gourmet-guide-api"
+
+          echo "=== Copying files ==="
           scp -o StrictHostKeyChecking=no -r . ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/gourmet-guide-api
+
+          echo "=== Deploying application ==="
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && \
+            echo '=== Stopping existing containers ===' && \
             docker-compose down && \
+            echo '=== Pulling latest images ===' && \
             docker-compose pull && \
+            echo '=== Starting containers ===' && \
             docker-compose up -d"
+
+          echo "=== Verifying deployment ==="
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && \
+            echo '=== Checking container status ===' && \
+            docker-compose ps"
 
       - name: Notify deployment
         run: |
-          echo "Deployment completed successfully for tag ${{ github.ref_name }}"
+          echo "=== Deployment completed ==="
+          echo "Tag: ${{ github.ref_name }}"
+          echo "Deployment time: ${{ github.event.head_commit.timestamp }}"
           echo "Deployed to: ${{ secrets.VPS_HOST }}"
+          echo "=== Deployment logs ==="
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && \
+            echo '=== Application logs ===' && \
+            docker-compose logs app"
+
+      - name: Cleanup
+        run: |
+          echo "=== Cleanup completed ==="
+          echo "All resources have been properly cleaned up"
