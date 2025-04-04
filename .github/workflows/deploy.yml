@@ -28,7 +28,7 @@ jobs:
           echo "Creating .env file with secrets"
           echo "GOFOOD_COOKIE=${{ secrets.GOFOOD_COOKIE }}" > .env
           echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
-          echo "OPENROUTER_API_BASE_URL=${{ secrets.OPENROUTER_API_BASE_URL }}" >> .env
+          echo "OPENROUTER_BASE_URL=${{ secrets.OPENROUTER_BASE_URL }}" >> .env
           echo "DB_USER=${{ secrets.DB_USER }}" >> .env
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
           echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
