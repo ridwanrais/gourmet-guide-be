@@ -37,25 +37,33 @@ jobs:
         run: |
           echo "=== Starting deployment ==="
           echo "=== Deployment details ==="
-          echo '{"timestamp": "$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")", "target": "${{ secrets.VPS_HOST }}", "user": "${{ secrets.VPS_USER }}", "directory": "/opt/gourmet-guide-api"}'
-
-          echo "=== Creating deployment directory ==="
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "mkdir -p /opt/gourmet-guide-api"
-
-          echo "=== Copying files ==="
-          scp -o StrictHostKeyChecking=no -r . ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/gourmet-guide-api
-
-          echo "=== Deploying application with cleanup ==="
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && \
-            echo '=== Stopping existing containers ===' && \
-            docker-compose down && \
-            echo '=== Removing unused containers and images ===' && \
-            docker container prune -f && \
-            docker image prune -f && \
-            echo '=== Pulling latest images ===' && \
-            docker-compose pull && \
-            echo '=== Starting containers ===' && \
-            docker-compose up -d"
+          echo "{"timestamp": "$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")", "target": "${{ secrets.VPS_HOST }}", "user": "${{ secrets.VPS_USER }}", "directory": "/opt/gourmet-guide-api"}"
+          
+          # Copy files
+          scp -o StrictHostKeyChecking=no -r * ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/gourmet-guide-api
+          
+          # Stop existing containers
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "docker compose down || true"
+          
+          # Start new containers
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && docker compose up -d"
+          
+          # Wait for containers to start
+          sleep 10
+          
+          # Check if app container is running and healthy
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && docker compose ps app" || {
+            echo "=== Application container failed to start ==="
+            exit 1
+          }
+          
+          # Check application health
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "curl -f http://localhost:8080/v1/health" || {
+            echo "=== Application health check failed ==="
+            exit 1
+          }
+          
+          echo "=== Deployment successful ==="
 
       - name: Verify deployment
         run: |
