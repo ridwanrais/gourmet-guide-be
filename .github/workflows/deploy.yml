@@ -38,36 +38,36 @@ jobs:
           echo "=== Starting deployment ==="
           echo "=== Deployment details ==="
           echo "{"timestamp": "$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")", "target": "${{ secrets.VPS_HOST }}", "user": "${{ secrets.VPS_USER }}", "directory": "/opt/gourmet-guide-api"}"
-          
+
           # Copy files
           scp -o StrictHostKeyChecking=no -r * ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/gourmet-guide-api
-          
+
           # Stop existing containers
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "docker compose down || true"
-          
+
           # Start new containers
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && docker compose up -d"
-          
+
           # Wait longer for containers to start
           echo "=== Waiting for services to start ==="
           sleep 30
-          
+
           # Check database container status
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && docker compose ps timescaledb" || {
             echo "=== Database container failed to start ==="
             exit 1
           }
-          
+
           # Check app container status
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && docker compose ps app" || {
             echo "=== Application container failed to start ==="
             exit 1
           }
-          
+
           # Wait a bit more for the app to be fully initialized
           echo "=== Waiting for application to be fully initialized ==="
           sleep 10
-          
+
           # Check application health
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "curl -f http://localhost:8080/v1/health" || {
             echo "=== Application health check failed ==="
@@ -75,7 +75,7 @@ jobs:
             ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "cd /opt/gourmet-guide-api && docker compose logs app"
             exit 1
           }
-          
+
           echo "=== Deployment successful ==="
 
       - name: Verify deployment

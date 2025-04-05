@@ -1,12 +1,15 @@
-import os
-from typing import List, Tuple
-from src.application.workflows import get_llm
-from src.domain.value_objects import CoordinatesResponse, AddressResponse
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable, GeocoderServiceError
 import asyncio
-from functools import partial
+import os
 import random
+from functools import partial
+from typing import List, Tuple
+
+from geopy.exc import (GeocoderServiceError, GeocoderTimedOut,
+                       GeocoderUnavailable)
+from geopy.geocoders import Nominatim
+
+from src.application.workflows import get_llm
+from src.domain.value_objects import AddressResponse, CoordinatesResponse
 
 # Initialize the geocoder with a meaningful user agent
 geocoder = Nominatim(user_agent="gourmet_guide_api")
@@ -32,18 +35,19 @@ FOOD_SUGGESTIONS = [
     "I'm in the mood for something with rice",
     "I want a place with good sides",
     "I'm looking for something with a nice presentation",
-    "I want something that's not too spicy"
+    "I want something that's not too spicy",
 ]
+
 
 async def generate_food_preference_suggestions(count: int = 5) -> List[str]:
     """
     Generate a list of food preference suggestions.
-    
+
     This function returns a random selection of predefined food preferences.
     """
     # Ensure count is within bounds
     count = min(count, len(FOOD_SUGGESTIONS))
-    
+
     # Return a random selection of suggestions
     return random.sample(FOOD_SUGGESTIONS, count)
 
@@ -64,7 +68,7 @@ async def geocode_address_service(address: str) -> CoordinatesResponse:
             return CoordinatesResponse(
                 latitude=location.latitude,
                 longitude=location.longitude,
-                formattedAddress=location.address
+                formattedAddress=location.address,
             )
         else:
             raise ValueError(f"Could not geocode address: {address}")
@@ -82,21 +86,26 @@ async def reverse_geocode_service(latitude: float, longitude: float) -> AddressR
         # Use run_in_executor to run the blocking reverse geocoding operation in a thread pool
         loop = asyncio.get_event_loop()
         # Create a partial function with our parameters
-        reverse_func = partial(geocoder.reverse, (latitude, longitude), exactly_one=True)
+        reverse_func = partial(
+            geocoder.reverse, (latitude, longitude), exactly_one=True
+        )
         # Run the function in a thread pool
         location = await loop.run_in_executor(None, reverse_func)
 
         if location:
             # Parse the address components
-            address_components = location.raw.get('address', {})
+            address_components = location.raw.get("address", {})
 
             # Extract relevant address components
-            street = address_components.get('road', '')
-            house_number = address_components.get('house_number', '')
-            city = address_components.get('city', address_components.get('town', address_components.get('village', '')))
-            state = address_components.get('state', '')
-            country = address_components.get('country', '')
-            postal_code = address_components.get('postcode', '')
+            street = address_components.get("road", "")
+            house_number = address_components.get("house_number", "")
+            city = address_components.get(
+                "city",
+                address_components.get("town", address_components.get("village", "")),
+            )
+            state = address_components.get("state", "")
+            country = address_components.get("country", "")
+            postal_code = address_components.get("postcode", "")
 
             # Format the address
             formatted_address = location.address
@@ -107,10 +116,12 @@ async def reverse_geocode_service(latitude: float, longitude: float) -> AddressR
                 state=state,
                 country=country,
                 postalCode=postal_code,
-                formattedAddress=formatted_address
+                formattedAddress=formatted_address,
             )
         else:
-            raise ValueError(f"Could not reverse geocode coordinates: {latitude}, {longitude}")
+            raise ValueError(
+                f"Could not reverse geocode coordinates: {latitude}, {longitude}"
+            )
     except (GeocoderTimedOut, GeocoderUnavailable, GeocoderServiceError) as e:
         raise ValueError(f"Geocoding service error: {str(e)}")
     except Exception as e:

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,9 +31,11 @@ app.include_router(location.router, prefix=f"{settings.API_V1_PREFIX}")
 app.include_router(preferences.router, prefix=f"{settings.API_V1_PREFIX}")
 app.include_router(restaurants.router, prefix=f"{settings.API_V1_PREFIX}")
 
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Gourmet Guide AI API"}
+
 
 @app.get(f"{settings.API_V1_PREFIX}/health")
 async def health_check(db: AsyncSession = Depends(get_db)):
@@ -54,4 +56,5 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("src.main:app", host="0.0.0.0", port=8080, reload=True)

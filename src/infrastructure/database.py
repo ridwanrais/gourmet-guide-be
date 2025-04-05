@@ -1,5 +1,6 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
 from src.config import settings
 
 # Create async engine
@@ -16,6 +17,7 @@ async_session_factory = sessionmaker(
 
 # Create base class for declarative models
 Base = declarative_base()
+
 
 # Dependency to get DB session
 async def get_db():

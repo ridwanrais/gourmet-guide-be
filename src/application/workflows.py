@@ -1,11 +1,14 @@
-from typing import Dict, Any, TypedDict, List, Optional
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from typing import Any, Dict, List, Optional, TypedDict
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from openai import OpenAI
+
 from src.config import settings
 
 
 class ConversationState(TypedDict):
     """Type for the state of the conversation."""
+
     messages: List[Dict[str, Any]]
     context: Dict[str, Any]
 

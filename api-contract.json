@@ -1,818 +1,881 @@
 {
-  "openapi": "3.0.3",
-  "info": {
-    "title": "Gourmet Guide AI API",
-    "description": "API for the Gourmet Guide AI food recommendation service",
-    "version": "1.0.0",
-    "contact": {
-      "name": "API Support",
-      "email": "support@gourmetguide.ai"
-    }
-  },
-  "servers": [
-    {
-      "url": "https://api.gourmetguide.ai/v1",
-      "description": "Production server"
-    },
-    {
-      "url": "https://staging-api.gourmetguide.ai/v1",
-      "description": "Staging server"
-    }
-  ],
-  "tags": [
-    {
-      "name": "location",
-      "description": "Location-related endpoints"
-    },
-    {
-      "name": "preferences",
-      "description": "User food preference endpoints"
-    },
-    {
-      "name": "restaurants",
-      "description": "Restaurant recommendation endpoints"
-    },
-    {
-      "name": "users",
-      "description": "User management endpoints"
-    }
-  ],
-  "paths": {
-    "/location/geocode": {
-      "post": {
-        "tags": ["location"],
-        "summary": "Convert address to coordinates",
-        "description": "Convert a text address to geographic coordinates",
-        "operationId": "geocodeAddress",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddressRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CoordinatesResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid address supplied",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/location/reverse-geocode": {
-      "post": {
-        "tags": ["location"],
-        "summary": "Convert coordinates to address",
-        "description": "Convert geographic coordinates to a text address",
-        "operationId": "reverseGeocodeCoordinates",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CoordinatesRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AddressResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid coordinates supplied",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/preferences/suggestions": {
-      "get": {
-        "tags": ["preferences"],
-        "summary": "Get food preference suggestions",
-        "description": "Get a list of suggested food preferences for the user",
-        "operationId": "getFoodPreferenceSuggestions",
-        "parameters": [
-          {
-            "name": "count",
-            "in": "query",
-            "description": "Number of suggestions to return",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 5
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuggestionsResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/restaurants/recommendations": {
-      "post": {
-        "tags": ["restaurants"],
-        "summary": "Get restaurant recommendations",
-        "description": "Get personalized restaurant recommendations based on location and preferences",
-        "operationId": "getRestaurantRecommendations",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RecommendationRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RecommendationsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/register": {
-      "post": {
-        "tags": ["users"],
-        "summary": "Register a new user",
-        "description": "Create a new user account",
-        "operationId": "registerUser",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserRegistrationRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "User created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "User already exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/login": {
-      "post": {
-        "tags": ["users"],
-        "summary": "Log in a user",
-        "description": "Authenticate a user and return a token",
-        "operationId": "loginUser",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Login successful",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Invalid credentials",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/preferences": {
-      "get": {
-        "tags": ["users"],
-        "summary": "Get user preferences",
-        "description": "Get the saved preferences for the authenticated user",
-        "operationId": "getUserPreferences",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserPreferencesResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": ["users"],
-        "summary": "Update user preferences",
-        "description": "Update the preferences for the authenticated user",
-        "operationId": "updateUserPreferences",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserPreferencesRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Preferences updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserPreferencesResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
   "components": {
     "schemas": {
       "AddressRequest": {
-        "type": "object",
-        "required": ["address"],
         "properties": {
           "address": {
-            "type": "string",
-            "example": "Jakarta, Indonesia"
+            "example": "Jakarta, Indonesia",
+            "type": "string"
           }
-        }
-      },
-      "CoordinatesResponse": {
-        "type": "object",
-        "properties": {
-          "latitude": {
-            "type": "number",
-            "format": "double",
-            "example": -6.2088
-          },
-          "longitude": {
-            "type": "number",
-            "format": "double",
-            "example": 106.8456
-          },
-          "formattedAddress": {
-            "type": "string",
-            "example": "Jakarta, Indonesia"
-          }
-        }
-      },
-      "CoordinatesRequest": {
-        "type": "object",
-        "required": ["latitude", "longitude"],
-        "properties": {
-          "latitude": {
-            "type": "number",
-            "format": "double",
-            "example": -6.2088
-          },
-          "longitude": {
-            "type": "number",
-            "format": "double",
-            "example": 106.8456
-          }
-        }
+        },
+        "required": [
+          "address"
+        ],
+        "type": "object"
       },
       "AddressResponse": {
-        "type": "object",
         "properties": {
           "address": {
-            "type": "string",
-            "example": "Jakarta, Indonesia"
+            "example": "Jakarta, Indonesia",
+            "type": "string"
           },
           "city": {
-            "type": "string",
-            "example": "Jakarta"
+            "example": "Jakarta",
+            "type": "string"
           },
           "country": {
-            "type": "string",
-            "example": "Indonesia"
+            "example": "Indonesia",
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "SuggestionsResponse": {
-        "type": "object",
+      "AuthResponse": {
         "properties": {
-          "suggestions": {
-            "type": "array",
+          "expiresIn": {
+            "description": "Token expiration time in seconds",
+            "example": 3600,
+            "type": "integer"
+          },
+          "token": {
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          }
+        },
+        "type": "object"
+      },
+      "CoordinatesRequest": {
+        "properties": {
+          "latitude": {
+            "example": -6.2088,
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "example": 106.8456,
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "type": "object"
+      },
+      "CoordinatesResponse": {
+        "properties": {
+          "formattedAddress": {
+            "example": "Jakarta, Indonesia",
+            "type": "string"
+          },
+          "latitude": {
+            "example": -6.2088,
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "example": 106.8456,
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "example": "NF_01",
+                "type": "string"
+              },
+              "details": {
+                "example": "User not found.",
+                "type": "string"
+              },
+              "message": {
+                "example": "The requested resource was not found.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "FoodItem": {
+        "properties": {
+          "description": {
+            "example": "Tender chicken in a rich, creamy tomato sauce",
+            "type": "string"
+          },
+          "id": {
+            "example": "item123",
+            "type": "string"
+          },
+          "imageUrl": {
+            "example": "https://api.gourmetguide.ai/images/butter-chicken.jpg",
+            "format": "uri",
+            "type": "string"
+          },
+          "name": {
+            "example": "Butter Chicken",
+            "type": "string"
+          },
+          "price": {
+            "example": 85000,
+            "format": "float",
+            "type": "number"
+          },
+          "tags": {
+            "example": [
+              "Spicy",
+              "Popular",
+              "Meat"
+            ],
             "items": {
               "type": "string"
             },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "RecommendationRequest": {
+        "properties": {
+          "coordinates": {
+            "properties": {
+              "latitude": {
+                "example": -6.2088,
+                "format": "double",
+                "type": "number"
+              },
+              "longitude": {
+                "example": 106.8456,
+                "format": "double",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "limit": {
+            "description": "Maximum number of recommendations to return",
+            "example": 5,
+            "type": "integer"
+          },
+          "location": {
+            "example": "Jakarta, Indonesia",
+            "type": "string"
+          },
+          "preference": {
+            "example": "I want something spicy and vegetarian",
+            "type": "string"
+          },
+          "radius": {
+            "description": "Search radius in kilometers",
+            "example": 5.0,
+            "format": "double",
+            "type": "number"
+          },
+          "userId": {
+            "description": "Optional user ID for personalized recommendations",
+            "example": "user123",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location",
+          "preference"
+        ],
+        "type": "object"
+      },
+      "RecommendationsResponse": {
+        "properties": {
+          "matchScore": {
+            "description": "How well the recommendations match the user's preferences",
+            "example": 0.92,
+            "format": "float",
+            "type": "number"
+          },
+          "restaurants": {
+            "items": {
+              "$ref": "#/components/schemas/Restaurant"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "Restaurant": {
+        "properties": {
+          "address": {
+            "example": "123 Spice Lane, Jakarta",
+            "type": "string"
+          },
+          "aiDescription": {
+            "description": "AI-generated description explaining why this restaurant is a good choice based on user preferences",
+            "example": "Spice Garden stands out for its authentic Indian flavors and generous vegetarian options. Their perfectly balanced spice levels cater to both spice enthusiasts and those who prefer milder tastes. The restaurant's warm ambiance and attentive service make it ideal for both casual dining and special occasions.",
+            "type": "string"
+          },
+          "coordinates": {
+            "properties": {
+              "latitude": {
+                "example": -6.2088,
+                "format": "double",
+                "type": "number"
+              },
+              "longitude": {
+                "example": 106.8456,
+                "format": "double",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "cuisineTypes": {
+            "example": [
+              "Indian",
+              "Spicy",
+              "Vegetarian"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "distance": {
+            "description": "Distance in kilometers from the user's location",
+            "example": 1.2,
+            "format": "float",
+            "type": "number"
+          },
+          "hours": {
+            "properties": {
+              "friday": {
+                "example": "10:00 AM - 11:00 PM",
+                "type": "string"
+              },
+              "monday": {
+                "example": "10:00 AM - 10:00 PM",
+                "type": "string"
+              },
+              "saturday": {
+                "example": "10:00 AM - 11:00 PM",
+                "type": "string"
+              },
+              "sunday": {
+                "example": "11:00 AM - 9:00 PM",
+                "type": "string"
+              },
+              "thursday": {
+                "example": "10:00 AM - 10:00 PM",
+                "type": "string"
+              },
+              "tuesday": {
+                "example": "10:00 AM - 10:00 PM",
+                "type": "string"
+              },
+              "wednesday": {
+                "example": "10:00 AM - 10:00 PM",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "example": "rest123",
+            "type": "string"
+          },
+          "name": {
+            "example": "Spice Garden",
+            "type": "string"
+          },
+          "openNow": {
+            "example": true,
+            "type": "boolean"
+          },
+          "popularItems": {
+            "items": {
+              "$ref": "#/components/schemas/FoodItem"
+            },
+            "type": "array"
+          },
+          "priceRange": {
+            "example": "$$",
+            "type": "string"
+          },
+          "rating": {
+            "example": 4.7,
+            "format": "float",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "SuggestionsResponse": {
+        "properties": {
+          "suggestions": {
             "example": [
               "I feel like eating something spicy and cheap",
               "Recommend a healthy lunch option",
               "What's a good vegetarian restaurant nearby?",
               "I want something quick and filling",
               "Show me the best-rated restaurants"
-            ]
-          }
-        }
-      },
-      "RecommendationRequest": {
-        "type": "object",
-        "required": ["location", "preference"],
-        "properties": {
-          "location": {
-            "type": "string",
-            "example": "Jakarta, Indonesia"
-          },
-          "preference": {
-            "type": "string",
-            "example": "I want something spicy and vegetarian"
-          },
-          "coordinates": {
-            "type": "object",
-            "properties": {
-              "latitude": {
-                "type": "number",
-                "format": "double",
-                "example": -6.2088
-              },
-              "longitude": {
-                "type": "number",
-                "format": "double",
-                "example": 106.8456
-              }
-            }
-          },
-          "radius": {
-            "type": "number",
-            "format": "double",
-            "example": 5.0,
-            "description": "Search radius in kilometers"
-          },
-          "limit": {
-            "type": "integer",
-            "example": 5,
-            "description": "Maximum number of recommendations to return"
-          },
-          "userId": {
-            "type": "string",
-            "example": "user123",
-            "description": "Optional user ID for personalized recommendations"
-          }
-        }
-      },
-      "RecommendationsResponse": {
-        "type": "object",
-        "properties": {
-          "restaurants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Restaurant"
-            }
-          },
-          "matchScore": {
-            "type": "number",
-            "format": "float",
-            "example": 0.92,
-            "description": "How well the recommendations match the user's preferences"
-          }
-        }
-      },
-      "Restaurant": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "rest123"
-          },
-          "name": {
-            "type": "string",
-            "example": "Spice Garden"
-          },
-          "rating": {
-            "type": "number",
-            "format": "float",
-            "example": 4.7
-          },
-          "priceRange": {
-            "type": "string",
-            "example": "$$"
-          },
-          "cuisineTypes": {
-            "type": "array",
+            ],
             "items": {
               "type": "string"
             },
-            "example": ["Indian", "Spicy", "Vegetarian"]
-          },
-          "address": {
-            "type": "string",
-            "example": "123 Spice Lane, Jakarta"
-          },
-          "coordinates": {
-            "type": "object",
-            "properties": {
-              "latitude": {
-                "type": "number",
-                "format": "double",
-                "example": -6.2088
-              },
-              "longitude": {
-                "type": "number",
-                "format": "double",
-                "example": 106.8456
-              }
-            }
-          },
-          "distance": {
-            "type": "number",
-            "format": "float",
-            "example": 1.2,
-            "description": "Distance in kilometers from the user's location"
-          },
-          "aiDescription": {
-            "type": "string",
-            "example": "Spice Garden stands out for its authentic Indian flavors and generous vegetarian options. Their perfectly balanced spice levels cater to both spice enthusiasts and those who prefer milder tastes. The restaurant's warm ambiance and attentive service make it ideal for both casual dining and special occasions.",
-            "description": "AI-generated description explaining why this restaurant is a good choice based on user preferences"
-          },
-          "popularItems": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FoodItem"
-            }
-          },
-          "openNow": {
-            "type": "boolean",
-            "example": true
-          },
-          "hours": {
-            "type": "object",
-            "properties": {
-              "monday": {
-                "type": "string",
-                "example": "10:00 AM - 10:00 PM"
-              },
-              "tuesday": {
-                "type": "string",
-                "example": "10:00 AM - 10:00 PM"
-              },
-              "wednesday": {
-                "type": "string",
-                "example": "10:00 AM - 10:00 PM"
-              },
-              "thursday": {
-                "type": "string",
-                "example": "10:00 AM - 10:00 PM"
-              },
-              "friday": {
-                "type": "string",
-                "example": "10:00 AM - 11:00 PM"
-              },
-              "saturday": {
-                "type": "string",
-                "example": "10:00 AM - 11:00 PM"
-              },
-              "sunday": {
-                "type": "string",
-                "example": "11:00 AM - 9:00 PM"
-              }
-            }
+            "type": "array"
           }
-        }
-      },
-      "FoodItem": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "item123"
-          },
-          "name": {
-            "type": "string",
-            "example": "Butter Chicken"
-          },
-          "price": {
-            "type": "number",
-            "format": "float",
-            "example": 85000
-          },
-          "description": {
-            "type": "string",
-            "example": "Tender chicken in a rich, creamy tomato sauce"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "example": ["Spicy", "Popular", "Meat"]
-          },
-          "imageUrl": {
-            "type": "string",
-            "format": "uri",
-            "example": "https://api.gourmetguide.ai/images/butter-chicken.jpg"
-          }
-        }
-      },
-      "UserRegistrationRequest": {
-        "type": "object",
-        "required": ["email", "password", "name"],
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "example": "user@example.com"
-          },
-          "password": {
-            "type": "string",
-            "format": "password",
-            "example": "securePassword123"
-          },
-          "name": {
-            "type": "string",
-            "example": "John Doe"
-          }
-        }
+        },
+        "type": "object"
       },
       "UserLoginRequest": {
-        "type": "object",
-        "required": ["email", "password"],
         "properties": {
           "email": {
-            "type": "string",
+            "example": "user@example.com",
             "format": "email",
-            "example": "user@example.com"
+            "type": "string"
           },
           "password": {
-            "type": "string",
+            "example": "securePassword123",
             "format": "password",
-            "example": "securePassword123"
+            "type": "string"
           }
-        }
-      },
-      "UserResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "user123"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "example": "user@example.com"
-          },
-          "name": {
-            "type": "string",
-            "example": "John Doe"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2025-03-27T13:51:25Z"
-          }
-        }
-      },
-      "AuthResponse": {
-        "type": "object",
-        "properties": {
-          "token": {
-            "type": "string",
-            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-          },
-          "user": {
-            "$ref": "#/components/schemas/UserResponse"
-          },
-          "expiresIn": {
-            "type": "integer",
-            "example": 3600,
-            "description": "Token expiration time in seconds"
-          }
-        }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object"
       },
       "UserPreferencesRequest": {
-        "type": "object",
         "properties": {
           "dietaryRestrictions": {
-            "type": "array",
+            "example": [
+              "Vegetarian",
+              "Gluten-Free"
+            ],
             "items": {
               "type": "string"
             },
-            "example": ["Vegetarian", "Gluten-Free"]
+            "type": "array"
           },
           "favoritesCuisines": {
-            "type": "array",
+            "example": [
+              "Italian",
+              "Japanese",
+              "Indian"
+            ],
             "items": {
               "type": "string"
             },
-            "example": ["Italian", "Japanese", "Indian"]
+            "type": "array"
           },
           "priceRangePreference": {
-            "type": "string",
-            "enum": ["$", "$$", "$$$", "$$$$"],
-            "example": "$$"
+            "enum": [
+              "$",
+              "$$",
+              "$$$",
+              "$$$$"
+            ],
+            "example": "$$",
+            "type": "string"
           },
           "spiceLevelPreference": {
-            "type": "integer",
-            "minimum": 1,
+            "example": 3,
             "maximum": 5,
-            "example": 3
+            "minimum": 1,
+            "type": "integer"
           }
-        }
+        },
+        "type": "object"
       },
       "UserPreferencesResponse": {
-        "type": "object",
         "properties": {
-          "userId": {
-            "type": "string",
-            "example": "user123"
-          },
           "dietaryRestrictions": {
-            "type": "array",
+            "example": [
+              "Vegetarian",
+              "Gluten-Free"
+            ],
             "items": {
               "type": "string"
             },
-            "example": ["Vegetarian", "Gluten-Free"]
+            "type": "array"
           },
           "favoritesCuisines": {
-            "type": "array",
+            "example": [
+              "Italian",
+              "Japanese",
+              "Indian"
+            ],
             "items": {
               "type": "string"
             },
-            "example": ["Italian", "Japanese", "Indian"]
+            "type": "array"
           },
           "priceRangePreference": {
-            "type": "string",
-            "enum": ["$", "$$", "$$$", "$$$$"],
-            "example": "$$"
+            "enum": [
+              "$",
+              "$$",
+              "$$$",
+              "$$$$"
+            ],
+            "example": "$$",
+            "type": "string"
           },
           "spiceLevelPreference": {
-            "type": "integer",
-            "minimum": 1,
+            "example": 3,
             "maximum": 5,
-            "example": 3
+            "minimum": 1,
+            "type": "integer"
           },
           "updatedAt": {
-            "type": "string",
+            "example": "2025-03-27T13:51:25Z",
             "format": "date-time",
-            "example": "2025-03-27T13:51:25Z"
+            "type": "string"
+          },
+          "userId": {
+            "example": "user123",
+            "type": "string"
           }
-        }
+        },
+        "type": "object"
       },
-      "ErrorResponse": {
-        "type": "object",
+      "UserRegistrationRequest": {
         "properties": {
-          "error": {
-            "type": "object",
-            "properties": {
-              "message": {
-                "type": "string",
-                "example": "The requested resource was not found."
-              },
-              "details": {
-                "type": "string",
-                "example": "User not found."
-              },
-              "code": {
-                "type": "string",
-                "example": "NF_01"
-              }
-            }
+          "email": {
+            "example": "user@example.com",
+            "format": "email",
+            "type": "string"
+          },
+          "name": {
+            "example": "John Doe",
+            "type": "string"
+          },
+          "password": {
+            "example": "securePassword123",
+            "format": "password",
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "email",
+          "password",
+          "name"
+        ],
+        "type": "object"
+      },
+      "UserResponse": {
+        "properties": {
+          "createdAt": {
+            "example": "2025-03-27T13:51:25Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "example": "user@example.com",
+            "format": "email",
+            "type": "string"
+          },
+          "id": {
+            "example": "user123",
+            "type": "string"
+          },
+          "name": {
+            "example": "John Doe",
+            "type": "string"
+          }
+        },
+        "type": "object"
       }
     },
     "securitySchemes": {
       "bearerAuth": {
-        "type": "http",
+        "bearerFormat": "JWT",
         "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "type": "http"
       }
     }
-  }
+  },
+  "info": {
+    "contact": {
+      "email": "support@gourmetguide.ai",
+      "name": "API Support"
+    },
+    "description": "API for the Gourmet Guide AI food recommendation service",
+    "title": "Gourmet Guide AI API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/location/geocode": {
+      "post": {
+        "description": "Convert a text address to geographic coordinates",
+        "operationId": "geocodeAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoordinatesResponse"
+                }
+              }
+            },
+            "description": "Successful operation"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid address supplied"
+          }
+        },
+        "summary": "Convert address to coordinates",
+        "tags": [
+          "location"
+        ]
+      }
+    },
+    "/location/reverse-geocode": {
+      "post": {
+        "description": "Convert geographic coordinates to a text address",
+        "operationId": "reverseGeocodeCoordinates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoordinatesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            },
+            "description": "Successful operation"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid coordinates supplied"
+          }
+        },
+        "summary": "Convert coordinates to address",
+        "tags": [
+          "location"
+        ]
+      }
+    },
+    "/preferences/suggestions": {
+      "get": {
+        "description": "Get a list of suggested food preferences for the user",
+        "operationId": "getFoodPreferenceSuggestions",
+        "parameters": [
+          {
+            "description": "Number of suggestions to return",
+            "in": "query",
+            "name": "count",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionsResponse"
+                }
+              }
+            },
+            "description": "Successful operation"
+          }
+        },
+        "summary": "Get food preference suggestions",
+        "tags": [
+          "preferences"
+        ]
+      }
+    },
+    "/restaurants/recommendations": {
+      "post": {
+        "description": "Get personalized restaurant recommendations based on location and preferences",
+        "operationId": "getRestaurantRecommendations",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationsResponse"
+                }
+              }
+            },
+            "description": "Successful operation"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          }
+        },
+        "summary": "Get restaurant recommendations",
+        "tags": [
+          "restaurants"
+        ]
+      }
+    },
+    "/users/login": {
+      "post": {
+        "description": "Authenticate a user and return a token",
+        "operationId": "loginUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            },
+            "description": "Login successful"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid credentials"
+          }
+        },
+        "summary": "Log in a user",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/preferences": {
+      "get": {
+        "description": "Get the saved preferences for the authenticated user",
+        "operationId": "getUserPreferences",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesResponse"
+                }
+              }
+            },
+            "description": "Successful operation"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get user preferences",
+        "tags": [
+          "users"
+        ]
+      },
+      "put": {
+        "description": "Update the preferences for the authenticated user",
+        "operationId": "updateUserPreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPreferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesResponse"
+                }
+              }
+            },
+            "description": "Preferences updated successfully"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Update user preferences",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/register": {
+      "post": {
+        "description": "Create a new user account",
+        "operationId": "registerUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRegistrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "User created successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "User already exists"
+          }
+        },
+        "summary": "Register a new user",
+        "tags": [
+          "users"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Production server",
+      "url": "https://api.gourmetguide.ai/v1"
+    },
+    {
+      "description": "Staging server",
+      "url": "https://staging-api.gourmetguide.ai/v1"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Location-related endpoints",
+      "name": "location"
+    },
+    {
+      "description": "User food preference endpoints",
+      "name": "preferences"
+    },
+    {
+      "description": "Restaurant recommendation endpoints",
+      "name": "restaurants"
+    },
+    {
+      "description": "User management endpoints",
+      "name": "users"
+    }
+  ]
 }

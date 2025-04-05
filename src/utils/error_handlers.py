@@ -1,5 +1,7 @@
 from fastapi import HTTPException, status
+
 from src.domain.value_objects import ErrorDetail
+
 
 class ErrorHandlers:
     @staticmethod
@@ -10,10 +12,10 @@ class ErrorHandlers:
             detail=ErrorDetail(
                 message="Invalid address supplied",
                 details=str(e),
-                code="INVALID_ADDRESS"
-            ).dict()
+                code="INVALID_ADDRESS",
+            ).dict(),
         )
-    
+
     @staticmethod
     def handle_invalid_coordinates(e: Exception):
         """Handle invalid coordinates errors"""
@@ -22,10 +24,10 @@ class ErrorHandlers:
             detail=ErrorDetail(
                 message="Invalid coordinates supplied",
                 details=str(e),
-                code="INVALID_COORDINATES"
-            ).dict()
+                code="INVALID_COORDINATES",
+            ).dict(),
         )
-    
+
     @staticmethod
     def handle_server_error(e: Exception):
         """Handle general server errors"""
@@ -34,10 +36,10 @@ class ErrorHandlers:
             detail=ErrorDetail(
                 message="An error occurred while processing the request",
                 details=str(e),
-                code="SERVER_ERROR"
-            ).dict()
+                code="SERVER_ERROR",
+            ).dict(),
         )
-    
+
     @staticmethod
     def handle_invalid_preferences(e: Exception):
         """Handle invalid preferences errors"""
@@ -46,10 +48,10 @@ class ErrorHandlers:
             detail=ErrorDetail(
                 message="Invalid preferences supplied",
                 details=str(e),
-                code="INVALID_PREFERENCES"
-            ).dict()
+                code="INVALID_PREFERENCES",
+            ).dict(),
         )
-    
+
     @staticmethod
     def handle_invalid_request(e: Exception):
         """Handle general invalid request errors"""
@@ -58,6 +60,6 @@ class ErrorHandlers:
             detail=ErrorDetail(
                 message="Invalid request parameters",
                 details=str(e),
-                code="INVALID_REQUEST"
-            ).dict()
+                code="INVALID_REQUEST",
+            ).dict(),
         )
