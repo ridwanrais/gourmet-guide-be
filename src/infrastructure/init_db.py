@@ -73,9 +73,20 @@ async def setup_timescaledb():
 async def init_db():
     """Initialize database with tables and TimescaleDB setup."""
     print("Initializing database...")
-    await drop_tables()  # First drop existing tables
-    await create_tables()  # Then create tables with the new schema
-    await setup_timescaledb()  # Finally set up TimescaleDB
+    try:
+        # Create tables if they don't exist
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            print("Tables created successfully")
+        
+        # Set up TimescaleDB hypertables
+        await setup_timescaledb()
+        print("TimescaleDB setup completed successfully")
+    except Exception as e:
+        print(f"Error during database initialization: {str(e)}")
+        raise
+    
+    print("Database initialization completed successfully!")
 
 
 if __name__ == "__main__":
