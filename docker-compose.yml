@@ -8,7 +8,14 @@ services:
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
       - POSTGRES_DB=${DB_NAME:-gourmet_guide}
-    command: ["postgres", "-c", "shared_preload_libraries=timescaledb", "-c", "timescaledb.telemetry_level=off"]
+    command:
+      [
+        "postgres",
+        "-c",
+        "shared_preload_libraries=timescaledb",
+        "-c",
+        "timescaledb.telemetry_level=off",
+      ]
     ports:
       - "5432:5432"
     volumes:
