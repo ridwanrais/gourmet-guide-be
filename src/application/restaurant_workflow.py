@@ -54,6 +54,17 @@ async def run_restaurant_recommendation_workflow(
     restaurants_data = await fetch_restaurants_from_gofood(coordinates)
     logger.info(f"Retrieved {len(restaurants_data)} restaurants from GoFood API")
 
+    # Return early if no restaurants were found
+    if not restaurants_data:
+        logger.info("No restaurants found, returning empty result")
+        return {
+            "restaurants_data": [],
+            "analysis_response": json.dumps({
+                "selected_restaurants": [],
+                "match_score": 0
+            })
+        }
+
     # Get LLM with Deepseek R1 model from OpenRouter
     logger.debug("Initializing OpenAI client for LLM processing")
     llm = get_openai_client()
@@ -432,7 +443,7 @@ async def get_restaurant_recommendations_service(
     user_id: Optional[str] = None,
     radius: Optional[float] = None,
     limit: Optional[int] = None,
-) -> RecommendationsResponse:
+) -> Tuple[RecommendationsResponse, str]:
     """
     Get personalized restaurant recommendations based on coordinates and prompt.
 
@@ -478,6 +489,9 @@ async def get_restaurant_recommendations_service(
     # Get service area for URL generation
     service_area, _ = await get_nearest_service_area(coordinates)
     logger.debug(f"Using service area for URLs: {service_area}")
+
+    # Initialize analysis with default values
+    analysis = {"selected_restaurants": [], "match_score": 0.0}
 
     # If we have restaurant data from GoFood
     if result.get("restaurants_data"):
@@ -553,6 +567,11 @@ async def get_restaurant_recommendations_service(
 
                 restaurants.append(restaurant)
                 logger.debug(f"Added restaurant {data.get('name')} to recommendations")
+
+    # If no restaurants were found, return early with an empty response
+    if not restaurants:
+        logger.info("No restaurants found, returning empty response")
+        return RecommendationsResponse(restaurants=[], matchScore=0.0), session_id
 
     # Create the response with match score
     match_score = analysis.get("match_score", 0.7)
